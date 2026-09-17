@@ -9,25 +9,25 @@ DrawContext::DrawContext(std::shared_ptr<sf::RenderWindow> window, std::shared_p
     : mWindow(window), mFont(font) {}
 
 void DrawContext::DrawCenteredText(const std::string &text, int pixelSize, Point2D p, RGBColor c) {
-    sf::Text text(*mFont);
+    sf::Text printedText(*mFont);
 
-    text.setString(text);
-    text.setCharacterSize(pixelSize);
-    text.setFillColor(sf::Color(c.r, c.g, c.b));
-    text.setPosition({p.x - text.getGlobalBounds().width / 2, p.y - text.getGlobalBounds().height / 2});
+    printedText.setString(text);
+    printedText.setCharacterSize(pixelSize);
+    printedText.setFillColor(sf::Color(c.r, c.g, c.b));
+    printedText.setPosition({p.x - printedText.getGlobalBounds().size.x / 2, p.y - printedText.getGlobalBounds().size.y / 2});
     
-    mWindow->draw(text);
+    mWindow->draw(printedText);
 }
 
 void DrawContext::DrawText(const std::string &text, int pixelSize, Point2D p, RGBColor c) {
-    sf::Text text(*mFont);
+    sf::Text printedText(*mFont);
 
-    text.setString(text);
-    text.setCharacterSize(pixelSize);
-    text.setFillColor(sf::Color(c.r, c.g, c.b));
-    text.setPosition({p.x, p.y});
+    printedText.setString(text);
+    printedText.setCharacterSize(pixelSize);
+    printedText.setFillColor(sf::Color(c.r, c.g, c.b));
+    printedText.setPosition({p.x, p.y});
     
-    mWindow->draw(text);
+    mWindow->draw(printedText);
 }
 
 void DrawContext::DrawCircle(Point2D p, float radius, RGBColor c) {
