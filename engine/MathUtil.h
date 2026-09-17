@@ -10,71 +10,67 @@ struct Point2D {
     float x, y;
     Point2D(float x = 0, float y = 0) : x(x), y(y) {}
     double Distance(const Point2D &other) const {
-        // TODO: write this code
-        return 0;
+        return std::sqrt(std::pow((x - other.x), 2) + std::pow((y - other.y), 2));  // distance formula 
     }
     Point2D operator+(const Point2D &other) const {
-        // TODO: write this code
-        return *this;
+        return Point2D(x + other.x, y + other.y);   // x1 + x2, y1 + y2
     }
     Point2D operator+(const float &other) const {
-        // TODO: write this code
-        return *this;
+        return Point2D(x + other, y + other);   // x + c, y + c
     }
     Point2D operator-(const Point2D &other) const {
-        // TODO: write this code
-        return *this;
+        return Point2D(x - other.x, y - other.y);
     }
     Point2D operator-(const float &other) const {
-        // TODO: write this code
-        return *this;
+        return Point2D(x - other, y - other);
     }
     Point2D operator*(const float &scalar) const {
-        // TODO: write this code
-        return *this;
+        return Point2D(x * scalar, y * scalar);
     }
     Point2D &operator+=(const float &scalar) {
-        // TODO: write this code
+        x = x + scalar;
+        y = y + scalar;
         return *this;
     }
     Point2D &operator+=(const Point2D &other) {
-        // TODO: write this code
+        x = x + other.x;
+        y = y + other.y;
         return *this;
     }
     Point2D &operator-=(const Point2D &other) {
-        // TODO: write this code
+        x = x - other.x;
+        y = y - other.y;
         return *this;
     }
     bool operator==(const Point2D &other) const {
-        // TODO: write this code
-        return false;
+        return x == other.x && y == other.y;
     }
     Point2D &operator*=(const int &scalar) {
-        // TODO: write this code
+        x = x * scalar;
+        y = y * scalar;
         return *this;
     }
     Point2D &operator/=(const int &scalar) {
-        // TODO: write this code
+        x = x * (1/scalar);
+        y = y * (1/scalar);
         return *this;
     }
-    float operator*(const Point2D &other) const {
-        // TODO: write this code
-        return 0;
+    float operator*(const Point2D &other) const {   // Dot product
+        return x * other.x + y * other.y;
     }
-    float Dot(Point2D b) const {
-        // TODO: write this code
-        return 0;
+    float Dot(Point2D b) const {    // Dot product of this and another point
+        return *this * b;
     }
-    static float Dot(Point2D a, Point2D b) {
-        // TODO: write this code
-        return 0;
+    static float Dot(Point2D a, Point2D b) {    // Dot product of 2 points
+        return a * b;
     }
-    static float Cross(Point2D a, Point2D b) {
-        // TODO: write this code
-        return 0;
+    static float Cross(Point2D a, Point2D b) {  // Determinant
+        return a.x * b.x - a.y  * b.y;
     }
     void Normalize() {
-        // TODO: write this code
+        double length = Distance(Point2D(0, 0));
+        x = x / length;
+        y = y / length;
     }
 };
 
