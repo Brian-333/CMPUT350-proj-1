@@ -46,13 +46,13 @@ struct Point2D {
         return x == other.x && y == other.y;
     }
     Point2D &operator*=(const int &scalar) {
-        x = x * scalar;
-        y = y * scalar;
+        x *= scalar;
+        y *= scalar;
         return *this;
     }
     Point2D &operator/=(const int &scalar) {
-        x = x * (1/scalar);
-        y = y * (1/scalar);
+        x /= scalar;
+        y /= scalar;
         return *this;
     }
     float operator*(const Point2D &other) const {   // Dot product
@@ -65,17 +65,20 @@ struct Point2D {
         return a * b;
     }
     static float Cross(Point2D a, Point2D b) {  // Determinant
-        return a.x * b.x - a.y  * b.y;
+        return a.x * b.y - a.y * b.x;
     }
     void Normalize() {
         double length = Distance(Point2D(0, 0));
+        if (length == 0) {
+            return;
+        }
         x = x / length;
         y = y / length;
     }
 };
 
 static std::ostream &operator<<(std::ostream &os, const Point2D &p) {
-    os << '(' << p.x << ', ' << p.y << ')';
+    os << '(' << p.x << ", " << p.y << ')';
     return os;
 }
 
@@ -117,7 +120,7 @@ struct Line {
 };
 
 static std::ostream &operator<<(std::ostream &os, const Line &l) {
-    os << 'P1:' << l.p1 << ', P2:' << l.p2;
+    os << "P1:" << l.p1 << ", P2:" << l.p2;
     return os;
 }
 
@@ -195,12 +198,12 @@ struct Rect {
         height = height - 2 * inset;
     }
     bool IsInside(const Point2D &p) const {
-        return p.x >= topLeft.x && p.x <= topLeft.x + width && p.y <= topLeft.y && p.y >= topLeft.y + height;
+        return p.x >= topLeft.x && p.x <= topLeft.x + width && p.y >= topLeft.y && p.y <= topLeft.y + height;
     }
 };
 
 static std::ostream &operator<<(std::ostream &os, const Rect &l) {
-    os << '(' << l.topLeft << ', ' << l.width << ', ' << l.height << ')';
+    os << '(' << l.topLeft << ", " << l.width << ", " << l.height << ')';
     return os;
 }
 
