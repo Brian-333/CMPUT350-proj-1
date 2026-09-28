@@ -2,6 +2,7 @@
 #define MATHUTIL_H
 
 #include <cmath>
+#include <algorithm>
 #include <iostream>
 
 namespace CMPUT350 {
@@ -51,8 +52,11 @@ struct Point2D {
         return *this;
     }
     Point2D &operator/=(const int &scalar) {
-        x /= scalar;
-        y /= scalar;
+        if (scalar != 0) 
+        {
+            x /= scalar;
+            y /= scalar;
+        }
         return *this;
     }
     float operator*(const Point2D &other) const {   // Dot product
@@ -114,8 +118,56 @@ struct Line {
         return closestPoint;
     }
     bool Crosses(Line other, Point2D &crossingPoint) const {
-            // TODO
+        // Logic found from:
+        // https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#565282
+        // Cases are taken from here
+        // The segments are p1 + t*r and other.p1 + u*s, where t and u are in [0, 1]
+        Point2D r = p2 - p1;
+        Point2D s = other.p2 - other.p1;
+        Point2D difference = other.p1 - p1;
+        float determinant = Point2D::Cross(r, s);
+
+        if (determinant == 0) { 
+            // case 2: parallel, non-collinear segments cannot cross
+            if (Point2D::Cross(difference, r) != 0) {
+                return false;  
+            }
+
+            // A zero-length first segment is just a point
+            float rSquared = Point2D::Dot(r, r);
+            if (rSquared == 0) {
+                crossingPoint = p1;
+                return other.ClosestPoint(p1) == p1;
+            }
+
+            // case 1: project the collinear segment onto this one
+            // t0 and t1 locate its endpoints along this segment's [0, 1] range
+            float t0 = Point2D::Dot(difference, r) / rSquared;
+            float t1 = t0 + Point2D::Dot(s, r) / rSquared;
+            float overlapStart = std::max(0.0f, std::min(t0, t1));
+            float overlapEnd = std::min(1.0f, std::max(t0, t1));
+
+            if (overlapStart > overlapEnd) 
+            {
+                return false;
+            }
+            // Use the first shared point when the segments overlap
+            crossingPoint = p1 + overlapStart * r;
+            return true;
+        }
+
+        float t = Point2D::Cross(difference, s) / determinant;
+        float u = Point2D::Cross(difference, r) / determinant;
+
+        // case 4: lines not parallel but do not intersect
+        if (t < 0 || t > 1 || u < 0 || u > 1) 
+        {
             return false;
+        }
+
+        // case 3: both intersection positions are on the segments.
+        crossingPoint = p1 + t * r;
+        return true;
     }
 };
 
@@ -138,7 +190,7 @@ struct Rect {
     float width, height;
 
     Rect(float left, float top, float width, float height)
-        : topLeft(Point2D(top, left)), width(width), height(height) {}
+        : topLeft(Point2D(left, top)), width(width), height(height) {}
 
     Rect(Point2D tl = {0, 0}, int w = 0, int h = 0) : topLeft(tl), width(w), height(h) {}
 
@@ -179,7 +231,21 @@ struct Rect {
         return *this;
     }
     Rect &operator&=(const Rect &other) {
-        // TODO: write this code
+        float left = std::max(topLeft.x, other.topLeft.x);
+        float top = std::max(topLeft.y, other.topLeft.y);
+        float right = std::min(topLeft.x + width, other.topLeft.x + other.width);
+        float bot = std::min(topLeft.y + height, other.topLeft.y + other.height);
+
+        // kinda confusing because we work in bottom right of grid but top < bot actually means the opposite of the wording
+        // bottom will be a larger number if the rect is allowed
+        if (left > right || top > bot) {  
+            width = 0;
+            height = 0;
+            return *this;
+        }
+        topLeft = {left, top};
+        width = right - left;
+        height = bot - top;
         return *this;
     }
     Rect &operator+=(const Point2D &other) {
@@ -198,6 +264,9 @@ struct Rect {
         height = height - 2 * inset;
     }
     bool IsInside(const Point2D &p) const {
+        if (width <= 0 || height <= 0) {
+            return false;
+        }
         return p.x >= topLeft.x && p.x <= topLeft.x + width && p.y >= topLeft.y && p.y <= topLeft.y + height;
     }
 };

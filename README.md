@@ -4,7 +4,7 @@
 
 ### MathUtil.h
 
-For when 2 line crosses indefinitely, the crossing point is set to (-1, -1) and is a valid cross.
+When two line segments overlap at multiple points, `Line::Crosses` returns the first shared point along the first segment.
 
 ## Library Versions
 
