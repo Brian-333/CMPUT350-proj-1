@@ -16,3 +16,7 @@ SFML - version 3.1.0
 
 - Cursor Prompt: @DrawContext.cpp (65-76) Using this format of docstring, update all function docstrings in @engine folder
     - This was helpful for documentation and it uses the requested format of docstring. 
+
+## Memory
+
+- Valgrind and leaks report some leak but looked it up, it's some noise produced by the graphics renderer.
