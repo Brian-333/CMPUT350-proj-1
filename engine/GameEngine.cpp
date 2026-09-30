@@ -65,6 +65,18 @@ void GameEngine::Run() {
         }
 
         // 2. Process events
+        while (const std::optional event = mWindow->pollEvent()) {
+            if (event->is<sf::Event::Closed>()) {
+                mWindow->close();
+            }
+            else if (event->is<sf::Event::Resized>()) {
+            }
+            else if (const auto* keyPressed = event->getIf<sf::Event::TextEntered>()) {
+                for (auto gameObject : mGameObjects) {
+                    gameObject->HandleKeyEvent(&mGameContext, keyPressed->unicode);
+                }
+            }
+        }
 
         // 3. Update game objects
         for (auto gameObject : mGameObjects) {
@@ -86,7 +98,7 @@ void GameEngine::Run() {
             }
         }
 
-            // 5. Late updates
+        // 5. Late updates
         for (auto gameObject : mGameObjects) {
             gameObject->LateUpdate(&mGameContext);
         }
@@ -112,20 +124,8 @@ void GameEngine::Run() {
 // Sample code for processing events
 
 // bool GameEngine::ProcessEvents(GameContext *context)
-//{
-//	while (const std::optional event = mWindow->pollEvent())
-//	{
-//		if (event->is<sf::Event::Closed>())
-//		{
-//		}
-//		else if (event->is<sf::Event::Resized>())
-//		{
-//		}
-//		else if (const auto* keyPressed = event->getIf<sf::Event::TextEntered>())
-//		{
-//			// use keyPressed->unicode to get character
-//		}
-//	}
+// {
+	
 // }
 
 }  // namespace CMPUT350
