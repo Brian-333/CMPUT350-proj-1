@@ -84,10 +84,10 @@ void DrawContext::DrawLine(Point2D from, Point2D to, float width, RGBColor c) {
     Point2D offset = perp * (width / 2.f);
 
     // Set 4 corners of the rectangular polygon
-    polygon.setPoint(0, from - offset);
-    polygon.setPoint(1, to - offset);
-    polygon.setPoint(2, to + offset);
-    polygon.setPoint(3, from + offset);
+    polygon.setPoint(0, {from.x - offset.x, from.y - offset.y});
+    polygon.setPoint(1, {to.x - offset.x, to.y - offset.y});
+    polygon.setPoint(2, {to.x + offset.x, to.y + offset.y});
+    polygon.setPoint(3, {from.x + offset.x, from.y + offset.y});
 
     polygon.setFillColor(sf::Color(c.r, c.g, c.b));
     polygon.setPosition({0, 0});
