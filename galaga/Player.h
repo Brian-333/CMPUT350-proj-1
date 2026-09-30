@@ -34,6 +34,8 @@ private:
     float width; 
     float height;
     std::array<std::weak_ptr<Bullet>, 2> bullets;
+    int pendingDirection;
+    bool fireRequested;
 };
 
 #endif

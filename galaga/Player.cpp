@@ -4,9 +4,14 @@
 #include "Bullet.h"
 
 Player::Player(CMPUT350::Point2D loc):
-    location(loc), width(40.0f), height(40.0f), isAlive(true)
+    isAlive(true),
+    location(loc),
+    bounds(loc.x - 20.0f, loc.y - 20.0f, 40.0f, 40.0f),
+    width(40.0f),
+    height(40.0f),
+    pendingDirection(0),
+    fireRequested(false)
 {
-    bounds = {location.x - width / 2, location.y - height / 2, width, height};
 }
 
 void Player::Initialize(CMPUT350::GameContext* context)
@@ -15,28 +20,23 @@ void Player::Initialize(CMPUT350::GameContext* context)
 
 void Player::Update(CMPUT350::GameContext* context)
 {
-}
+    const float movement = 15.0f;
 
-void Player::LateUpdate(CMPUT350::GameContext* context)
-{
-}
-
-bool Player::HandleKeyEvent(CMPUT350::GameContext* context, char key)
-{
-    float movement = 15.0f;
-
-    if (key == 'A' || key == 'a') {
+    if (pendingDirection == -1) {
         location.x -= movement;
-
         location.x = std::max(location.x, width / 2);
     }
-    else if (key == 'D' || key == 'd') {
+    else if (pendingDirection == 1) {
         location.x += movement;
-
-        location.x = std::min(location.x, 
-            context->ScreenContext->GetWindowWidth() - width / 2);
+        location.x = std::min(
+            location.x,
+            context->ScreenContext->GetWindowWidth() - width / 2
+        );
     }
-    else if (key == ' ') {
+
+    bounds = {location.x - width / 2, location.y - height / 2, width, height};
+
+    if (fireRequested) {
         for (auto& bullet : bullets) {
             if (bullet.expired()) {
                 auto newBullet = std::make_shared<Bullet>(
@@ -44,17 +44,35 @@ bool Player::HandleKeyEvent(CMPUT350::GameContext* context, char key)
                 );
                 context->mEngineView->AddGameObject(newBullet);
                 bullet = newBullet;
-                return true;
+                break;
             }
         }
-        return true;   // 2 bullets already existing
-    }
-    else {
-        return false;
     }
 
-    bounds = {location.x - width / 2, location.y - height / 2, width, height};
-    return true;
+    pendingDirection = 0;
+    fireRequested = false;
+}
+
+void Player::LateUpdate(CMPUT350::GameContext* context)
+{
+}
+
+bool Player::HandleKeyEvent(CMPUT350::GameContext*, char key)
+{
+    if (key == 'A' || key == 'a') {
+        pendingDirection = -1;
+        return true;
+    }
+    else if (key == 'D' || key == 'd') {
+        pendingDirection = 1;
+        return true;
+    }
+    else if (key == ' ') {
+        fireRequested = true;
+        return true;
+    }
+
+    return false;
 }
 
 void Player::RenderBackground(CMPUT350::GameContext* context)
