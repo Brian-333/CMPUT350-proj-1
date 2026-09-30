@@ -7,6 +7,12 @@
 
 namespace CMPUT350 {
 
+/**
+ * @brief Holds shared engine state passed to game objects each frame.
+ *
+ * Provides access to the engine view for spawning objects and the draw
+ * context for rendering.
+ */
 class GameContext {
 public:
     EngineView *mEngineView;

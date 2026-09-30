@@ -4,10 +4,26 @@
 
 namespace CMPUT350 {
 
-// Constructor
+/**
+ * @brief Constructs a draw context for rendering to a window.
+ *
+ * @param window The SFML render window to draw onto.
+ * @param font The font used when drawing text.
+ */
 DrawContext::DrawContext(std::shared_ptr<sf::RenderWindow> window, std::shared_ptr<sf::Font> font)
     : mWindow(window), mFont(font) {}
 
+/**
+ * @brief Draws text centered on a point with a specified size and color.
+ *
+ * @param text The string to draw.
+ * @param pixelSize The character size in pixels.
+ * @param p The center point of the text (Point2D).
+ * @param c The color of the text, specified as an RGBColor object.
+ *
+ * Positions the text so its bounding box is centered on the given point,
+ * then renders it onto the associated window.
+ */
 void DrawContext::DrawCenteredText(const std::string &text, int pixelSize, Point2D p, RGBColor c) {
     sf::Text printedText(*mFont);
 
@@ -19,6 +35,16 @@ void DrawContext::DrawCenteredText(const std::string &text, int pixelSize, Point
     mWindow->draw(printedText);
 }
 
+/**
+ * @brief Draws text at a point with a specified size and color.
+ *
+ * @param text The string to draw.
+ * @param pixelSize The character size in pixels.
+ * @param p The top-left position of the text (Point2D).
+ * @param c The color of the text, specified as an RGBColor object.
+ *
+ * Places the text at the given position and renders it onto the associated window.
+ */
 void DrawContext::DrawText(const std::string &text, int pixelSize, Point2D p, RGBColor c) {
     sf::Text printedText(*mFont);
 
@@ -30,6 +56,16 @@ void DrawContext::DrawText(const std::string &text, int pixelSize, Point2D p, RG
     mWindow->draw(printedText);
 }
 
+/**
+ * @brief Draws a filled circle with a specified radius and color.
+ *
+ * @param p The center point of the circle (Point2D).
+ * @param radius The radius of the circle in pixels.
+ * @param c The fill color of the circle, specified as an RGBColor object.
+ *
+ * Creates a circle shape centered on the given point and renders it onto
+ * the associated window.
+ */
 void DrawContext::DrawCircle(Point2D p, float radius, RGBColor c) {
     sf::CircleShape circle(radius);
 
@@ -40,6 +76,15 @@ void DrawContext::DrawCircle(Point2D p, float radius, RGBColor c) {
     mWindow->draw(circle);
 }
 
+/**
+ * @brief Draws a filled rectangle with a specified color.
+ *
+ * @param r The rectangle to draw (Rect).
+ * @param c The fill color of the rectangle, specified as an RGBColor object.
+ *
+ * Creates a rectangle shape from the given bounds and renders it onto
+ * the associated window.
+ */
 void DrawContext::DrawRect(Rect r, RGBColor c) {
     sf::RectangleShape rectangle;
     
@@ -50,6 +95,16 @@ void DrawContext::DrawRect(Rect r, RGBColor c) {
     mWindow->draw(rectangle);
 }
 
+/**
+ * @brief Draws an outlined rectangle with a specified outline width and color.
+ *
+ * @param r The rectangle to outline (Rect).
+ * @param width The outline thickness in pixels.
+ * @param c The outline color, specified as an RGBColor object.
+ *
+ * Creates a transparent-filled rectangle with an outline and renders it onto
+ * the associated window.
+ */
 void DrawContext::FrameRect(Rect r, float width, RGBColor c) {
     sf::RectangleShape rectangle;
     
@@ -97,8 +152,18 @@ void DrawContext::DrawLine(Point2D from, Point2D to, float width, RGBColor c) {
     mWindow->draw(polygon);
 }
 
+/**
+ * @brief Returns the width of the associated window in pixels.
+ *
+ * @return The window width in pixels.
+ */
 int DrawContext::GetWindowWidth() { return mWindow->getSize().x; }
 
+/**
+ * @brief Returns the height of the associated window in pixels.
+ *
+ * @return The window height in pixels.
+ */
 int DrawContext::GetWindowHeight() { return mWindow->getSize().y; }
 
 }  // namespace CMPUT350

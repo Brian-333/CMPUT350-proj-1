@@ -5,14 +5,17 @@ namespace CMPUT350 {
 #include "FontData.h"
 
 /**
- * @method GameEngine
- * @arguments width - the width of the game window in pixels
- *            height - the height of the game window in pixels
- *            name - the title displayed on the game window
- * @description Creates the SFML render window, limits the framerate to 30 FPS, loads the embedded
+ * @brief Constructs the game engine and initializes the window, font, and game context.
+ *
+ * @param width The width of the game window in pixels.
+ * @param height The height of the game window in pixels.
+ * @param name The title displayed on the game window.
+ *
+ * Creates the SFML render window, limits the framerate to 30 FPS, loads the embedded
  * font, and sets up the game context (draw context and engine view) that is passed to game objects.
  */
 GameEngine::GameEngine(unsigned int width, unsigned int height, const std::string& name) {
+    mGameContext.ScreenContext = nullptr;
     // Create the SFML window
     mWindow = std::make_shared<sf::RenderWindow>(sf::VideoMode(sf::Vector2u(width, height)), name);
     if (!mWindow) {
@@ -32,14 +35,16 @@ GameEngine::GameEngine(unsigned int width, unsigned int height, const std::strin
 }
 
 /**
- * @method ~GameEngine
- * @arguments None
- * @description Kills all active game objects, removes them from the engine, and closes the game window.
+ * @brief Destroys the game engine and releases owned resources.
+ *
+ * Kills all active game objects, removes them from the engine, and closes the game window.
  */
 GameEngine::~GameEngine() {
     // Cleanup resources
     // Clean up game objects
-    delete mGameContext.ScreenContext;
+    if (mGameContext.ScreenContext) {
+        delete mGameContext.ScreenContext;
+    }
     for (auto gameObject : mGameObjects) {
         gameObject->Kill();
     }
@@ -48,19 +53,20 @@ GameEngine::~GameEngine() {
 }
 
 /**
- * @method AddGameObject
- * @arguments gameObject - the game object to add to the engine
- * @description Queues a game object to be added to the engine. The object is initialized and becomes
- * active at the start of the next frame.
+ * @brief Queues a game object to be added to the engine.
+ *
+ * @param gameObject The game object to add to the engine.
+ *
+ * The object is initialized and becomes active at the start of the next frame.
  */
 void GameEngine::AddGameObject(std::shared_ptr<GameObject> gameObject) {
     mGameObjectsToAdd.emplace_back(gameObject);
 }
 
 /**
- * @method Run
- * @arguments None
- * @description Gives control to the game engine. Will not return until the game window is closed or
+ * @brief Runs the main game loop until the window is closed.
+ *
+ * Gives control to the game engine. Will not return until the game window is closed or
  * all objects have been destroyed.
  */
 void GameEngine::Run() {
