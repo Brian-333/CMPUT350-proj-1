@@ -83,8 +83,10 @@ void GameEngine::Run() {
         }
 
         // 3. Update game objects
-        for (auto gameObject : mGameObjects) {
-            gameObject->Update(&mGameContext);
+        if (gameRunning) {
+            for (auto gameObject : mGameObjects) {
+                gameObject->Update(&mGameContext);
+            }
         }
 
 
@@ -123,9 +125,7 @@ void GameEngine::Run() {
             std::shared_ptr<GraphicsObject> graphicsObject = std::dynamic_pointer_cast<GraphicsObject>(gameObject);
             if (graphicsObject) {
                 // 6. Render background
-                if (gameRunning) {
-                    graphicsObject->RenderBackground(&mGameContext);
-                }
+                graphicsObject->RenderBackground(&mGameContext);
                 // 7. Render foreground
                 graphicsObject->RenderForeground(&mGameContext);
             }
