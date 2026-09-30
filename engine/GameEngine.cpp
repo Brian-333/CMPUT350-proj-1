@@ -4,6 +4,14 @@
 namespace CMPUT350 {
 #include "FontData.h"
 
+/**
+ * @method GameEngine
+ * @arguments width - the width of the game window in pixels
+ *            height - the height of the game window in pixels
+ *            name - the title displayed on the game window
+ * @description Creates the SFML render window, limits the framerate to 30 FPS, loads the embedded
+ * font, and sets up the game context (draw context and engine view) that is passed to game objects.
+ */
 GameEngine::GameEngine(unsigned int width, unsigned int height, const std::string& name) {
     // Create the SFML window
     mWindow = std::make_shared<sf::RenderWindow>(sf::VideoMode(sf::Vector2u(width, height)), name);
@@ -23,9 +31,15 @@ GameEngine::GameEngine(unsigned int width, unsigned int height, const std::strin
     mGameContext.mEngineView = this;
 }
 
+/**
+ * @method ~GameEngine
+ * @arguments None
+ * @description Kills all active game objects, removes them from the engine, and closes the game window.
+ */
 GameEngine::~GameEngine() {
     // Cleanup resources
     // Clean up game objects
+    delete mGameContext.ScreenContext;
     for (auto gameObject : mGameObjects) {
         gameObject->Kill();
     }
@@ -33,6 +47,12 @@ GameEngine::~GameEngine() {
     mWindow->close();
 }
 
+/**
+ * @method AddGameObject
+ * @arguments gameObject - the game object to add to the engine
+ * @description Queues a game object to be added to the engine. The object is initialized and becomes
+ * active at the start of the next frame.
+ */
 void GameEngine::AddGameObject(std::shared_ptr<GameObject> gameObject) {
     mGameObjectsToAdd.emplace_back(gameObject);
 }
@@ -128,7 +148,7 @@ void GameEngine::Run() {
                 graphicsObject->RenderBackground(&mGameContext);
             }
         }
-        
+
         // 7. Render foreground
         for (auto gameObject : mGameObjects) {
             std::shared_ptr<GraphicsObject> graphicsObject = std::dynamic_pointer_cast<GraphicsObject>(gameObject);
@@ -146,9 +166,9 @@ void GameEngine::Run() {
         //         std::shared_ptr<CollisionObject> collisionObject2 = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[j]);
         //         if (collisionObject2) {
         //             Rect bounds = collisionObject->GetBounds();
-        //             mGameContext.ScreenContext->DrawRect(collisionObject->GetBounds(), Colors::green);
+        //             mGameContext.ScreenContext->FrameRect(collisionObject->GetBounds(), 1, Colors::green);
         //             bounds &= collisionObject2->GetBounds();
-        //             mGameContext.ScreenContext->DrawRect(collisionObject2->GetBounds(), Colors::green);
+        //             mGameContext.ScreenContext->FrameRect(collisionObject2->GetBounds(), 1, Colors::green);
         //         }
         //     }
         // }
