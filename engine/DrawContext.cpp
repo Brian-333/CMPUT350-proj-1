@@ -74,12 +74,22 @@ void DrawContext::FrameRect(Rect r, float width, RGBColor c) {
  */
 void DrawContext::DrawLine(Point2D from, Point2D to, float width, RGBColor c) {
     sf::ConvexShape polygon;
+    polygon.setPointCount(4);
 
-    polygon.setPointCount(2);
-    polygon.setPoint(0, sf::Vector2f(from.x, from.y));
-    polygon.setPoint(1, sf::Vector2f(to.x, to.y));
-    polygon.setOutlineColor(sf::Color(c.r, c.g, c.b));
-    polygon.setOutlineThickness(width);
+    Point2D dir = to - from;
+    dir.Normalize();
+
+    // Get perpendicular vector scaled by half-thickness
+    Point2D perp = Point2D(-dir.y, dir.x);
+    Point2D offset = perp * (width / 2.f);
+
+    // Set 4 corners of the rectangular polygon
+    polygon.setPoint(0, from - offset);
+    polygon.setPoint(1, to - offset);
+    polygon.setPoint(2, to + offset);
+    polygon.setPoint(3, from + offset);
+
+    polygon.setFillColor(sf::Color(c.r, c.g, c.b));
     polygon.setPosition({0, 0});
 
     mWindow->draw(polygon);
