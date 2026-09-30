@@ -121,12 +121,18 @@ void GameEngine::Run() {
         // Clear window
         mWindow->clear();
 
+        // 6. Render background
         for (auto gameObject : mGameObjects) {
             std::shared_ptr<GraphicsObject> graphicsObject = std::dynamic_pointer_cast<GraphicsObject>(gameObject);
             if (graphicsObject) {
-                // 6. Render background
                 graphicsObject->RenderBackground(&mGameContext);
-                // 7. Render foreground
+            }
+        }
+        
+        // 7. Render foreground
+        for (auto gameObject : mGameObjects) {
+            std::shared_ptr<GraphicsObject> graphicsObject = std::dynamic_pointer_cast<GraphicsObject>(gameObject);
+            if (graphicsObject) {
                 graphicsObject->RenderForeground(&mGameContext);
             }
         }
