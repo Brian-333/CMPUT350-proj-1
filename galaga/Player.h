@@ -2,6 +2,8 @@
 #define PLAYER_H
 
 #include "CollisionObject.h"
+#include "Bullet.h"
+#include <array>
 
 class Player : public CMPUT350::CollisionObject
 {
@@ -25,6 +27,13 @@ public:
     void CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj) override;
     const CMPUT350::Rect& GetBounds() override;
 
+private:
+    bool isAlive;
+    CMPUT350::Point2D location;
+    CMPUT350::Rect bounds;
+    float width; 
+    float height;
+    std::array<std::weak_ptr<Bullet>, 2> bullets;
 };
 
 #endif
