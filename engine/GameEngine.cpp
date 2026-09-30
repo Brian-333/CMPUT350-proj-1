@@ -11,8 +11,9 @@ GameEngine::GameEngine(unsigned int width, unsigned int height, const std::strin
         std::cerr << "WARNING: Window did not create." << "\n";
         return;
     }
-    // Set the framerate limit and prevent key repeats
-    mWindow->setFramerateLimit(60);
+    // Set the framerate limit
+    mWindow->setFramerateLimit(30);
+    
     std::shared_ptr<sf::Font> font = std::make_shared<sf::Font>();
     // Load font from memory
     if (!font->openFromMemory(&_font, _font_len)) {
@@ -93,7 +94,12 @@ void GameEngine::Run() {
             for (int j = i + 1; j < mGameObjects.size(); j++) {
                 std::shared_ptr<CollisionObject> collisionObject2 = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[j]);
                 if (collisionObject2) {
-                    collisionObject->CollisionEnter(collisionObject2);
+                    Rect bounds = collisionObject->GetBounds();
+                    bounds &= collisionObject2->GetBounds();
+                    if (bounds.width > 0 && bounds.height > 0) {
+                        collisionObject->CollisionEnter(collisionObject2);
+                        collisionObject2->CollisionEnter(collisionObject);
+                    }
                 }
             }
         }
@@ -115,6 +121,22 @@ void GameEngine::Run() {
                 graphicsObject->RenderForeground(&mGameContext);
             }
         }
+        // Draw collision bounds
+        // for (int i = 0; i < mGameObjects.size(); i++) {
+        //     std::shared_ptr<CollisionObject> collisionObject = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[i]);
+        //     if (!collisionObject) {
+        //         continue;
+        //     }
+        //     for (int j = i + 1; j < mGameObjects.size(); j++) {
+        //         std::shared_ptr<CollisionObject> collisionObject2 = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[j]);
+        //         if (collisionObject2) {
+        //             Rect bounds = collisionObject->GetBounds();
+        //             mGameContext.ScreenContext->DrawRect(collisionObject->GetBounds(), Colors::red);
+        //             bounds &= collisionObject2->GetBounds();
+        //             mGameContext.ScreenContext->DrawRect(collisionObject2->GetBounds(), Colors::red);
+        //         }
+        //     }
+        // }
 
         // Actually render to window
         mWindow->display();
