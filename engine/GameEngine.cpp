@@ -73,6 +73,9 @@ void GameEngine::Run() {
             else if (event->is<sf::Event::Resized>()) {
             }
             else if (const auto* keyPressed = event->getIf<sf::Event::TextEntered>()) {
+                if (keyPressed->unicode == 'p') {
+                    gameRunning = !gameRunning;
+                }
                 for (auto gameObject : mGameObjects) {
                     gameObject->HandleKeyEvent(&mGameContext, keyPressed->unicode);
                 }
@@ -86,27 +89,31 @@ void GameEngine::Run() {
 
 
         // 4. Process collision events
-        for (int i = 0; i < mGameObjects.size(); i++) {
-            std::shared_ptr<CollisionObject> collisionObject = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[i]);
-            if (!collisionObject) {
-                continue;
-            }
-            for (int j = i + 1; j < mGameObjects.size(); j++) {
-                std::shared_ptr<CollisionObject> collisionObject2 = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[j]);
-                if (collisionObject2) {
-                    Rect bounds = collisionObject->GetBounds();
-                    bounds &= collisionObject2->GetBounds();
-                    if (bounds.width > 0 && bounds.height > 0) {
-                        collisionObject->CollisionEnter(collisionObject2);
-                        collisionObject2->CollisionEnter(collisionObject);
+        if (gameRunning) {
+            for (int i = 0; i < mGameObjects.size(); i++) {
+                std::shared_ptr<CollisionObject> collisionObject = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[i]);
+                if (!collisionObject) {
+                    continue;
+                }
+                for (int j = i + 1; j < mGameObjects.size(); j++) {
+                    std::shared_ptr<CollisionObject> collisionObject2 = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[j]);
+                    if (collisionObject2) {
+                        Rect bounds = collisionObject->GetBounds();
+                        bounds &= collisionObject2->GetBounds();
+                        if (bounds.width > 0 && bounds.height > 0) {
+                            collisionObject->CollisionEnter(collisionObject2);
+                            collisionObject2->CollisionEnter(collisionObject);
+                        }
                     }
                 }
             }
         }
 
         // 5. Late updates
-        for (auto gameObject : mGameObjects) {
-            gameObject->LateUpdate(&mGameContext);
+        if (gameRunning) {
+            for (auto gameObject : mGameObjects) {
+                gameObject->LateUpdate(&mGameContext);
+            }
         }
 
         // Clear window
@@ -116,7 +123,9 @@ void GameEngine::Run() {
             std::shared_ptr<GraphicsObject> graphicsObject = std::dynamic_pointer_cast<GraphicsObject>(gameObject);
             if (graphicsObject) {
                 // 6. Render background
-                graphicsObject->RenderBackground(&mGameContext);
+                if (gameRunning) {
+                    graphicsObject->RenderBackground(&mGameContext);
+                }
                 // 7. Render foreground
                 graphicsObject->RenderForeground(&mGameContext);
             }
@@ -131,12 +140,15 @@ void GameEngine::Run() {
         //         std::shared_ptr<CollisionObject> collisionObject2 = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[j]);
         //         if (collisionObject2) {
         //             Rect bounds = collisionObject->GetBounds();
-        //             mGameContext.ScreenContext->DrawRect(collisionObject->GetBounds(), Colors::red);
+        //             mGameContext.ScreenContext->DrawRect(collisionObject->GetBounds(), Colors::green);
         //             bounds &= collisionObject2->GetBounds();
-        //             mGameContext.ScreenContext->DrawRect(collisionObject2->GetBounds(), Colors::red);
+        //             mGameContext.ScreenContext->DrawRect(collisionObject2->GetBounds(), Colors::green);
         //         }
         //     }
         // }
+        if (!gameRunning) {
+            mGameContext.ScreenContext->DrawCenteredText("Game Paused", 20, Point2D(mGameContext.ScreenContext->GetWindowWidth() / 2, mGameContext.ScreenContext->GetWindowHeight() / 2), Colors::white);
+        }
 
         // Actually render to window
         mWindow->display();

@@ -36,6 +36,8 @@ private:
     std::shared_ptr<sf::RenderWindow> mWindow;
     GameContext mGameContext;
 
+    bool gameRunning = true;
+
     std::vector<std::shared_ptr<GameObject>> mGameObjects;
     std::vector<std::shared_ptr<GameObject>> mGameObjectsToAdd;
 };
