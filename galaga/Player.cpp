@@ -23,7 +23,7 @@ void Player::LateUpdate(CMPUT350::GameContext* context)
 
 bool Player::HandleKeyEvent(CMPUT350::GameContext* context, char key)
 {
-    float movement = 10.0f;
+    float movement = 15.0f;
 
     if (key == 'A' || key == 'a') {
         location.x -= movement;
@@ -40,7 +40,7 @@ bool Player::HandleKeyEvent(CMPUT350::GameContext* context, char key)
         for (auto& bullet : bullets) {
             if (bullet.expired()) {
                 auto newBullet = std::make_shared<Bullet>(
-                    location, CMPUT350::Point2D({0, -10}), true
+                    location, CMPUT350::Point2D({0, -20}), true
                 );
                 context->mEngineView->AddGameObject(newBullet);
                 bullet = newBullet;

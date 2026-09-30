@@ -2,7 +2,7 @@
 #include "Bullet.h"
 
 Enemy::Enemy(CMPUT350::Point2D loc): 
-    center(loc), width(20.f), height(20.f)
+    center(loc), width(30.f), height(25.f)
 {
     bounds = {center.x - width / 2, center.y - height / 2, width, height};
     isAlive = true;

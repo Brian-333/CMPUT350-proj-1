@@ -5,7 +5,7 @@ Bullet::Bullet(CMPUT350::Point2D location, CMPUT350::Point2D heading, bool playe
     location(location), heading(heading), isPlayerBullet(player), isAlive(true)
 {
     width = 5.0f;
-    height = 10.0f;
+    height = 20.0f;
     bounds = CMPUT350::Rect(location.x - width / 2, location.y - height / 2, width, height);
 }
 
