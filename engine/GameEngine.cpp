@@ -118,20 +118,20 @@ void GameEngine::Run() {
 
         // 4. Process collision events
         if (gameRunning) {
-            for (int i = 0; i < mGameObjects.size(); i++) {
-                std::shared_ptr<CollisionObject> collisionObject = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[i]);
-                if (!collisionObject) {
-                    continue;
+            std::vector<std::shared_ptr<CollisionObject>> collisionObjects;
+            for (auto gameObject : mGameObjects) {
+                std::shared_ptr<CollisionObject> collisionObject = std::dynamic_pointer_cast<CollisionObject>(gameObject);
+                if (collisionObject) {
+                    collisionObjects.push_back(collisionObject);
                 }
-                for (int j = i + 1; j < mGameObjects.size(); j++) {
-                    std::shared_ptr<CollisionObject> collisionObject2 = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[j]);
-                    if (collisionObject2) {
-                        Rect bounds = collisionObject->GetBounds();
-                        bounds &= collisionObject2->GetBounds();
-                        if (bounds.width > 0 && bounds.height > 0) {
-                            collisionObject->CollisionEnter(collisionObject2);
-                            collisionObject2->CollisionEnter(collisionObject);
-                        }
+            }
+            for (int i = 0; i < collisionObjects.size(); i++) {
+                for (int j = i + 1; j < collisionObjects.size(); j++) {
+                    Rect bounds = collisionObjects[i]->GetBounds();
+                    bounds &= collisionObjects[j]->GetBounds();
+                    if (bounds.width > 0 && bounds.height > 0) {
+                        collisionObjects[i]->CollisionEnter(collisionObjects[j]);
+                        collisionObjects[j]->CollisionEnter(collisionObjects[i]);
                     }
                 }
             }
