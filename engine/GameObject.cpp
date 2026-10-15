@@ -41,17 +41,6 @@ void GameObject::LateUpdate(GameContext *context) { return; }
 void GameObject::RenderUI(GameContext *contextrender) { return; }
 
 /**
- * @brief Handles a keyboard text-entered event.
- *
- * @param context The game context providing engine and draw access.
- * @param key The unicode character that was entered.
- * @return True if the event was handled; false otherwise.
- *
- * Default implementation ignores the key and returns false.
- */
-bool GameObject::HandleKeyEvent(GameContext *context, char key) { return false; }
-
-/**
  * @brief Reports whether the game object is still alive.
  *
  * @return True if the object should remain in the engine; false to remove it.
@@ -67,5 +56,14 @@ bool GameObject::IsAlive() const { return true; }
  * should no longer be considered alive.
  */
 void GameObject::Kill() {}
+
+/**
+ * @brief Receives a notification from the notification manager.
+ *
+ * @param key The key that the notification was sent for.
+ *
+ * Default implementation does nothing. Override to handle the notification.
+ */
+void GameObject::ReceiveNotification(const std::string& key) { return; }
 
 }  // namespace CMPUT350
