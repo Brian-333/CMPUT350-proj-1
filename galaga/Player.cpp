@@ -2,6 +2,7 @@
 #include <algorithm>
 #include "Player.h"
 #include "Bullet.h"
+#include "Enemy.h"
 
 Player::Player(CMPUT350::Point2D loc):
     isAlive(true),
@@ -9,30 +10,32 @@ Player::Player(CMPUT350::Point2D loc):
     bounds(loc.x - 20.0f, loc.y - 20.0f, 40.0f, 40.0f),
     width(40.0f),
     height(40.0f),
-    pendingDirection(0),
-    fireRequested(false)
+    fireRequested(false),
+    left(false),
+    right(false)
 {
 }
 
 void Player::Initialize(CMPUT350::GameContext* context)
 {
+    auto* notifications = context->mNotificationManager;
+
+    notifications->Register(context->CurrObject, "MoveLeftUp");
+    notifications->Register(context->CurrObject, "MoveLeftDown");
+    notifications->Register(context->CurrObject, "MoveRightUp");
+    notifications->Register(context->CurrObject, "MoveRightDown");
+    notifications->Register(context->CurrObject, "Fire");
+
 }
 
 void Player::Update(CMPUT350::GameContext* context)
 {
     const float movement = 15.0f;
+    int direction = static_cast<int>(right) - static_cast<int>(left);
+    location.x += direction * movement;
 
-    if (pendingDirection == -1) {
-        location.x -= movement;
-        location.x = std::max(location.x, width / 2);
-    }
-    else if (pendingDirection == 1) {
-        location.x += movement;
-        location.x = std::min(
-            location.x,
-            context->ScreenContext->GetWindowWidth() - width / 2
-        );
-    }
+    location.x = std::clamp(location.x, width / 2, 
+        context->ScreenContext->GetWindowWidth() - width / 2);
 
     bounds = {location.x - width / 2, location.y - height / 2, width, height};
 
@@ -40,7 +43,7 @@ void Player::Update(CMPUT350::GameContext* context)
         for (auto& bullet : bullets) {
             if (bullet.expired()) {
                 auto newBullet = std::make_shared<Bullet>(
-                    location, CMPUT350::Point2D({0, -20}), true
+                    location, CMPUT350::Point2D({0, -20}), true, context->CurrObject
                 );
                 context->mEngineView->AddGameObject(newBullet);
                 bullet = newBullet;
@@ -49,7 +52,6 @@ void Player::Update(CMPUT350::GameContext* context)
         }
     }
 
-    pendingDirection = 0;
     fireRequested = false;
 }
 
@@ -57,22 +59,18 @@ void Player::LateUpdate(CMPUT350::GameContext* context)
 {
 }
 
-bool Player::HandleKeyEvent(CMPUT350::GameContext*, char key)
-{
-    if (key == 'A' || key == 'a') {
-        pendingDirection = -1;
-        return true;
-    }
-    else if (key == 'D' || key == 'd') {
-        pendingDirection = 1;
-        return true;
-    }
-    else if (key == ' ') {
+void Player::ReceiveNotification(const std::string& key) {
+    if (key == "MoveLeftUp") {
+        left = false;
+    } else if (key == "MoveLeftDown") {
+        left = true;
+    } else if (key == "MoveRightDown") {
+        right = true;
+    } else if (key == "MoveRightUp") {
+        right = false;
+    } else if (key == "Fire") {
         fireRequested = true;
-        return true;
     }
-
-    return false;
 }
 
 void Player::RenderBackground(CMPUT350::GameContext* context)
@@ -95,8 +93,9 @@ void Player::RenderForeground(CMPUT350::GameContext* context)
 void Player::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj)
 {
     auto bullet = std::dynamic_pointer_cast<Bullet>(obj);
+    auto enemy = std::dynamic_pointer_cast<Enemy>(obj);
 
-    if (bullet && !bullet->IsPlayerBullet()) {
+    if (enemy || (bullet && !bullet->IsPlayerBullet())) {
         Kill();
     }
 }
@@ -114,4 +113,16 @@ bool Player::IsAlive() const
 const CMPUT350::Rect& Player::GetBounds()
 {
     return bounds;
+}
+
+CMPUT350::Point2D Player::GetLocation() const {
+    return location;
+}
+
+float Player::GetRotation() const {
+    return 0.f;
+}
+
+const std::vector<CMPUT350::Shape>& Player::GetShapes() {
+    return shapes;
 }

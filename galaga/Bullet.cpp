@@ -17,10 +17,6 @@ bool Bullet::IsPlayerBullet()
     return isPlayerBullet;
 }
 
-void Bullet::Initialize(CMPUT350::GameContext* context)
-{
-}
-
 void Bullet::Update(CMPUT350::GameContext* context)
 {   
     CMPUT350::Rect oldBounds(location.x - width / 2, location.y - height / 2, width, height);
@@ -44,15 +40,6 @@ void Bullet::Update(CMPUT350::GameContext* context)
 }
 
 void Bullet::LateUpdate(CMPUT350::GameContext* context)
-{
-}
-
-bool Bullet::HandleKeyEvent(CMPUT350::GameContext* context, char key)
-{
-    return false;
-}
-
-void Bullet::RenderBackground(CMPUT350::GameContext* context)
 {
 }
 
