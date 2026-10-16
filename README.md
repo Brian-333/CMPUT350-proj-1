@@ -2,6 +2,12 @@
 
 ## Design Choices
 
+
+### Keybinding
+
+Keys can have custom binding.
+The key "P" is reserved for pausing the game so it cannot be override to use for other functions
+
 ### MathUtil.h
 
 When two line segments overlap at multiple points, `Line::Crosses` returns the first shared point along the first segment.

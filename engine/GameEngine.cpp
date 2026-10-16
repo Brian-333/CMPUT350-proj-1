@@ -61,6 +61,9 @@ GameEngine::~GameEngine() {
  * @param notification The notification to install.
  */
 void GameEngine::InstallKeyDownNotification(int key, const std::string &notification) {
+    if (key == Key::P) {
+        throw std::runtime_error("Key P is reserved for pausing the game");
+    }
     mKeybindsDown[key] = notification;
 }
 
@@ -73,6 +76,9 @@ void GameEngine::InstallKeyDownNotification(int key, const std::string &notifica
  * @param notification The notification to install.
  */
 void GameEngine::InstallKeyUpNotification(int key, const std::string &notification) {
+    if (key == Key::P) {
+        throw std::runtime_error("Key P is reserved for pausing the game");
+    }
     mKeybindsUp[key] = notification;
 }
 
