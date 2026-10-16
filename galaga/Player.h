@@ -29,9 +29,9 @@ public:
     void ReceiveNotification(const std::string& key) override;
 
     const std::vector<CMPUT350::Shape> &GetShapes() override;
-    virtual CMPUT350::Point2D GetLocation() const;
+    CMPUT350::Point2D GetLocation() const override;
 	// Return the rotation of the object in radians
-	virtual float GetRotation() const;
+	float GetRotation() const override;
 
 
 private:
