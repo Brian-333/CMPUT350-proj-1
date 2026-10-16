@@ -12,6 +12,7 @@ class GameEngine;
 #include "GameContext.h"
 #include "CollisionObject.h"
 #include "GraphicsObject.h"
+#include "Keyboard.h"
 #include <SFML/Graphics.hpp>
 
 namespace CMPUT350 {
@@ -28,6 +29,8 @@ public:
     GameEngine& operator=(const GameEngine&) = delete;  // Prevent assignment
     GameEngine& operator=(GameEngine&&) = delete;       // Prevent move-assignment
 
+    void InstallKeyDownNotification(int key, const std::string &notification) override;
+    void InstallKeyUpNotification(int key, const std::string &notification) override;
     void AddGameObject(std::shared_ptr<GameObject> gameObject) override;
 
     void Run();
@@ -40,6 +43,9 @@ private:
 
     std::vector<std::shared_ptr<GameObject>> mGameObjects;
     std::vector<std::shared_ptr<GameObject>> mGameObjectsToAdd;
+
+    std::unordered_map<int, std::string> mKeybindsDown;
+    std::unordered_map<int, std::string> mKeybindsUp;
 };
 
 }  // namespace CMPUT350

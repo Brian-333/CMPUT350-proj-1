@@ -53,6 +53,30 @@ GameEngine::~GameEngine() {
 }
 
 /**
+ * @brief Installs a keydown notification for a given key.
+ * 
+ * Notification will be overridden if a new notification is installed for the same key.
+ *
+ * @param key The key to install the notification for.
+ * @param notification The notification to install.
+ */
+void GameEngine::InstallKeyDownNotification(int key, const std::string &notification) {
+    mKeybindsDown[key] = notification;
+}
+
+/**
+ * @brief Installs a keyup notification for a given key.
+ *
+ * Notification will be overridden if a new notification is installed for the same key.
+ *
+ * @param key The key to install the notification for.
+ * @param notification The notification to install.
+ */
+void GameEngine::InstallKeyUpNotification(int key, const std::string &notification) {
+    mKeybindsUp[key] = notification;
+}
+
+/**
  * @brief Queues a game object to be added to the engine.
  *
  * @param gameObject The game object to add to the engine.
@@ -70,8 +94,14 @@ void GameEngine::AddGameObject(std::shared_ptr<GameObject> gameObject) {
  * all objects have been destroyed.
  */
 void GameEngine::Run() {
+    // Reset the current frame counter
+    mGameContext.currentFrame = 0;
+
     while (mWindow->isOpen())  // window is open
     {
+        // Increment the current frame counter
+        mGameContext.currentFrame++;
+        
         // 0. Remove any objects that are now dead
         mGameObjects.erase(
             std::remove_if(
@@ -98,12 +128,21 @@ void GameEngine::Run() {
             }
             else if (event->is<sf::Event::Resized>()) {
             }
-            else if (const auto* keyPressed = event->getIf<sf::Event::TextEntered>()) {
-                if (keyPressed->unicode == 'p') {
+            else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+                static int currentKey;
+                currentKey = static_cast<int>(keyPressed->code);
+                if (currentKey == Key::P) {
                     gameRunning = !gameRunning;
                 }
-                for (auto gameObject : mGameObjects) {
-                    gameObject->HandleKeyEvent(&mGameContext, keyPressed->unicode);
+                if (mKeybindsDown.contains(currentKey)) {
+                    mGameContext.mNotificationManager->Notify(mKeybindsDown[currentKey]);
+                }
+            }
+            else if (const auto* keyReleased = event->getIf<sf::Event::KeyReleased>()) {
+                static int currentKey;
+                currentKey = static_cast<int>(keyReleased->code);
+                if (mKeybindsUp.contains(currentKey)) {
+                    mGameContext.mNotificationManager->Notify(mKeybindsUp[currentKey]);
                 }
             }
         }
