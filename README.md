@@ -5,8 +5,14 @@
 
 ### Keybinding
 
-Keys can have custom binding.
-The key "P" is reserved for pausing the game so it cannot be override to use for other functions
+Keys can have custom binding.  
+The key "P" is reserved for pausing the game so it cannot be override to use for other functions.  
+
+### Game Engine
+
+std::unordered_map<int, std::string> mKeybindsDown;  
+std::unordered_map<int, std::string> mKeybindsUp;  
+Two separate unordered_map were used to maintain keybinding of the physical key number to the message requested from the game.
 
 ### MathUtil.h
 
