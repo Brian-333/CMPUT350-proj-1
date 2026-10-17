@@ -35,6 +35,11 @@ public:
 
     void Run();
 
+    GameEngine::const_iterator cbegin() const override;
+    GameEngine::const_iterator cend() const override;
+    GameEngine::const_iterator begin() const override;
+    GameEngine::const_iterator end() const override;
+
 private:
     std::shared_ptr<sf::RenderWindow> mWindow;
     GameContext mGameContext;

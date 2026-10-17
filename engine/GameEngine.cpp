@@ -93,6 +93,11 @@ void GameEngine::AddGameObject(std::shared_ptr<GameObject> gameObject) {
     mGameObjectsToAdd.emplace_back(gameObject);
 }
 
+GameEngine::const_iterator GameEngine::cbegin() const { return mGameObjects.cbegin(); }
+GameEngine::const_iterator GameEngine::cend() const { return mGameObjects.cend(); }
+GameEngine::const_iterator GameEngine::begin() const { return mGameObjects.begin(); }
+GameEngine::const_iterator GameEngine::end() const { return mGameObjects.end(); }
+
 /**
  * @brief Runs the main game loop until the window is closed.
  *
