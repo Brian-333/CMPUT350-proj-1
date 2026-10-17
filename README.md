@@ -93,7 +93,22 @@ SFML - version 3.1.0
 
 I found it very useful for getting the point calculations done for the Bezier curves, as well as implementing the different attack pattern ideas that I had. In order to save time, I tried to always do the first implementation by myself, and then after I got it working, I would get the AI to mirror my logic for the remaining cases. It was also very helpful for debugging and quick last-minute fixes. I still feel like I got to do a lot by hand and that the AI only skipped some of the tedious calculations for me.
 
+### Brian Lin's AI reflection
+
+I found AI very useful for debugging and checking the collision logics since there are many cases to consider for. It's really useful for debugging a lot of stuff such that it can trace through code really fast to find some bugs that would take hours to find if done manually.  
+I implement the code myself first, then AI fixes the bugs.
+
 ### AI Usage
+
+- Cursor AI prompt: "Process the ProcessShapeCollision in @engine/GameEngine.cpp. The shape are in local coordinates so it needs to be transform to global coordinate to compare collision. If one side of the shape is line then the CollisionEnter should also pass the crossingPoint back in local coordinates"
+    - Cursor AI implemented `GameEngine::ProcessShapeCollision`: transform shapes with each object's location/rotation before testing; line collisions call `CollisionEnter` with the hit converted via `ReverseTransform` into each object's local space; non-line pairs report overlap without a point. Follow-ups ("Re implement it to as simple as possible", "When an object spawns inside another, it should not collide") simplified the helpers and adjusted containment behavior. Later Codex work further refined directed line/circle and line/rect first-hit selection; the current code is a mix of those edits. Local CMake build passed during the Cursor session; collision demo / headless geometry checks were used for validation.
+
+- Cursor AI prompt: "Why does it not show collision point when the 2 lines paralle on the top left spin to the left show a collision point"
+    - Cursor AI traced the top-left parallel demo lines (same rotation → stay parallel; only collinear at 0°/180°) and found `Line::Crosses` rejected the 180° overlap because parallel/collinear tests used exact `== 0` after `cos`/`sin` float error. AI added a small epsilon in `MathUtil.h` `Line::Crosses`. Headless checks then reported the 180° overlap; local rebuild passed.
+
+- Cursor AI prompt: "Update the README and docs according"
+    - Cursor AI drafted `project.txt` for rubric item 8 (overview, design decisions, Galaga state flow, contributions, extra credit, AI disclosure), updated `README.md`, and added missing engine docstrings (`ProcessShapeCollision`, `SetContextOffset`/`SetContextRotation`, `Bezier` APIs). The team later revised `project.txt`/`README.md` further (reflections, keybinds EC notes, Stars, etc.); treat the final docs as team-owned with Cursor-assisted drafts.
+
 
 - Codex prompt: "Ok put that in" (adding the existing Stars background).
     - AI added Stars' location/rotation overrides, queued one background from Galaga::Initialize, and excluded Stars from game-over cleanup. The existing star drawing and scrolling behavior was retained. The local CMake build passed; visual review and the team's reflection remain pending.

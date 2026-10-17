@@ -25,20 +25,45 @@ std::size_t SelectSegment(const std::vector<Point2D>& pts, float& t) {
 }
 
 
+/**
+ * @brief Stores control points for later instance GetPoint/GetSlope calls.
+ *
+ * @param pts Control points for one or more cubic segments.
+ */
 Bezier::Bezier(const std::vector<Point2D> &pts): mPoints(pts)
 {
 }
 
+/**
+ * @brief Evaluates this instance's curve at parameter t.
+ *
+ * @param t Curve parameter in [0, segmentCount].
+ * @return The point on the curve at t.
+ */
 Point2D Bezier::GetPoint(float t) const {
     return Bezier::GetPoint(mPoints, t);
 }
 
+/**
+ * @brief Evaluates this instance's curve derivative at parameter t.
+ *
+ * @param t Curve parameter in [0, segmentCount].
+ * @return The tangent/slope vector at t.
+ */
 Point2D Bezier::GetSlope(float t) const {
     return Bezier::GetSlope(mPoints, t);
 }
 
+/**
+ * @brief Evaluates a cubic multi-segment Bezier at parameter t.
+ *
+ * AI-assisted: apply de Casteljau interpolation to the selected cubic only.
+ *
+ * @param pts Control points; must contain 3*k+1 points with k >= 1.
+ * @param t Curve parameter in [0, segmentCount].
+ * @return The point on the curve at t.
+ */
 Point2D Bezier::GetPoint(const std::vector<Point2D> &pts, float t) {
-    // AI-assisted: apply de Casteljau interpolation to the selected cubic only.
     const std::size_t start = SelectSegment(pts, t);
     Point2D tmp[4] = {pts[start], pts[start + 1], pts[start + 2], pts[start + 3]};
     for (int remaining = 3; remaining > 0; --remaining) {
@@ -49,8 +74,16 @@ Point2D Bezier::GetPoint(const std::vector<Point2D> &pts, float t) {
     return tmp[0];
 }
 
+/**
+ * @brief Evaluates a cubic multi-segment Bezier derivative at parameter t.
+ *
+ * AI-assisted: evaluate the derivative on the same segment as GetPoint.
+ *
+ * @param pts Control points; must contain 3*k+1 points with k >= 1.
+ * @param t Curve parameter in [0, segmentCount].
+ * @return The tangent/slope vector at t.
+ */
 Point2D Bezier::GetSlope(const std::vector<Point2D> &pts, float t) {
-    // AI-assisted: evaluate the derivative on the same segment as GetPoint.
     const std::size_t start = SelectSegment(pts, t);
     const float c = 1 - t;
     float slopeX = 3 * (c * c) * (pts[start + 1].x - pts[start].x) +
