@@ -89,6 +89,10 @@ SFML - version 3.1.0
 
 ## Resources
 
+### Damon Grant's AI reflection
+
+I found it very useful for getting the point calculations done for the Bezier curves, as well as implementing the different attack pattern ideas that I had. In order to save time, I tried to always do the first implementation by myself, and then after I got it working, I would get the AI to mirror my logic for the remaining cases. It was also very helpful for debugging and quick last-minute fixes. I still feel like I got to do a lot by hand and that the AI only skipped some of the tedious calculations for me.
+
 ### AI Usage
 
 - Codex prompt: "Ok put that in" (adding the existing Stars background).
