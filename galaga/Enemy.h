@@ -33,6 +33,9 @@ public:
 	// Return the rotation of the object in radians
 	float GetRotation() const override;
 
+    bool IsEntering() const;
+    bool IsAttacking() const;
+
 protected:
     // AI-assisted: call whenever an entrance, attack, or return path changes.
     // Builds the distance table and resets movement to the start of the path.

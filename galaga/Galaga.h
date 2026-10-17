@@ -30,10 +30,16 @@ private:
     CMPUT350::Point2D playerSpawn;
     int startUpFrames = 90; // 3 seconds
     int startAtFrame = 0;
+    
+    bool wavePending = false;
+    int nextWaveFrame = 0;
+    int currWave = 1;
     bool startUpPending = false;
+    int returnToHomeFrame = 0;
     int enemyCount = 0;
     int playerScore = 0;
     int playerLives = 3;
+    bool respawnPending = false;
     int level = 1;
     bool coinInserted = false;
     std::weak_ptr<Player> player;

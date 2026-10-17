@@ -215,6 +215,14 @@ const std::vector<CMPUT350::Shape>& Enemy::GetShapes() {
     return shapes;
 }
 
+bool Enemy::IsEntering() const {
+    return state == State::Spawning;
+}
+
+bool Enemy::IsAttacking() const {
+    return state == State::Attacking;
+}
+
 /////////////////////////////////////////////////////////
 // Different enemy types below
 
