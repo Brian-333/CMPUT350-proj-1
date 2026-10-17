@@ -299,22 +299,25 @@ struct Line {
         // https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#565282
         // Cases are taken from here
         // The segments are p1 + t*r and other.p1 + u*s, where t and u are in [0, 1]
+        // Epsilon is needed because rotated endpoints are rarely exact, so parallel
+        // overlapping segments (e.g. 180°) can fail an exact == 0 collinear test.
+        const float epsilon = 1e-4f;
         Point2D r = p2 - p1;
         Point2D s = other.p2 - other.p1;
         Point2D difference = other.p1 - p1;
         float determinant = Point2D::Cross(r, s);
 
-        if (determinant == 0) { 
+        if (std::fabs(determinant) <= epsilon) {
             // case 2: parallel, non-collinear segments cannot cross
-            if (Point2D::Cross(difference, r) != 0) {
-                return false;  
+            if (std::fabs(Point2D::Cross(difference, r)) > epsilon) {
+                return false;
             }
 
             // A zero-length first segment is just a point
             float rSquared = Point2D::Dot(r, r);
-            if (rSquared == 0) {
+            if (rSquared <= epsilon) {
                 crossingPoint = p1;
-                return other.ClosestPoint(p1) == p1;
+                return other.ClosestPoint(p1).Distance(p1) <= epsilon;
             }
 
             // case 1: project the collinear segment onto this one
@@ -324,8 +327,7 @@ struct Line {
             float overlapStart = std::max(0.0f, std::min(t0, t1));
             float overlapEnd = std::min(1.0f, std::max(t0, t1));
 
-            if (overlapStart > overlapEnd) 
-            {
+            if (overlapStart > overlapEnd) {
                 return false;
             }
             // Use the first shared point when the segments overlap
@@ -337,8 +339,7 @@ struct Line {
         float u = Point2D::Cross(difference, r) / determinant;
 
         // case 4: lines not parallel but do not intersect
-        if (t < 0 || t > 1 || u < 0 || u > 1) 
-        {
+        if (t < 0 || t > 1 || u < 0 || u > 1) {
             return false;
         }
 
