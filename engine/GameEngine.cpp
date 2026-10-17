@@ -280,7 +280,7 @@ void GameEngine::Run() {
         //     }
         // }
         if (!gameRunning) {
-            mGameContext.ScreenContext->DrawCenteredText("Game Paused", 20, Point2D(mGameContext.ScreenContext->GetWindowWidth() / 2, mGameContext.ScreenContext->GetWindowHeight() / 2), Colors::white);
+            mGameContext.ScreenContext->DrawCenteredText("Game Paused", 20, Point2D(mGameContext.ScreenContext->GetWindowWidth() * 1.0f / 2, mGameContext.ScreenContext->GetWindowHeight() * 1.0f / 2), Colors::white);
         }
 
         // Actually render to window
