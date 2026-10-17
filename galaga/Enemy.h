@@ -68,7 +68,8 @@ private:
     };
     std::vector<PathSample> pathSamples;
     float distanceTravelled = 0.0f;
-    float movementSpeed = 3.0f; // Pixels per frame along the path.
+    float movementSpeed = 9.0f; // Pixels per frame along the path.
+    float hoverBlend = 0.0f; // Ease into the shared formation hover after arrival.
 
     CMPUT350::NotificationManager* notifications = nullptr;
 

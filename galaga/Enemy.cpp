@@ -13,7 +13,7 @@ Enemy::Enemy(CMPUT350::Point2D loc, const std::vector<CMPUT350::Point2D> &path):
     state(State::Spawning),
     maxShots(4),
     shotCooldown(15),
-    bulletSpeed(10.0f),
+    bulletSpeed(15.0f),
     health(1),
     pointsAwarded(100),
     color(CMPUT350::Colors::yellow)
@@ -108,15 +108,21 @@ void Enemy::Update(CMPUT350::GameContext* context)
 
             if (pathProgress >= endProgress) {
                 location = formationLocation;
+                hoverBlend = 0.0f;
                 state = State::Idle;
             }
             break;
         }
         case State::Idle: {
+            // Join the synchronized hover gradually instead of jumping to its
+            // current offset on the first idle frame.
+            hoverBlend = std::min(hoverBlend + 1.0f / 30.0f, 1.0f);
             location.x = formationLocation.x +
-                std::sin(context->currentFrame * 0.03f) * 15.0f;    // movement = 15.0f pixels while hovering, speed = 0.03f
+                std::sin(context->currentFrame * 0.03f) * 15.0f * hoverBlend;
             location.y = formationLocation.y;
-            rotation = 0.f;
+            // Turn back toward the formation orientation by the shortest route.
+            float turn = std::remainder(-rotation, 2.0f * 3.14159265f);
+            rotation += std::clamp(turn, -0.12f, 0.12f);
             break;
         }
         case State::Attacking: {
@@ -132,6 +138,7 @@ void Enemy::Update(CMPUT350::GameContext* context)
 
             if (pathProgress >= endProgress) {
                 location = formationLocation;
+                hoverBlend = 0.0f;
                 state = State::Idle;
             }
             break;
@@ -281,7 +288,7 @@ Enemy2::Enemy2(CMPUT350::Point2D loc, const std::vector<CMPUT350::Point2D> &path
         maxShots = 8;
         health = 2;
         shotCooldown = 20;
-        bulletSpeed = 6.0f;
+        bulletSpeed = 10.0f;
         pointsAwarded = 150;
         color = CMPUT350::Colors::white;
 }
@@ -297,17 +304,19 @@ bool Enemy2::Attack(CMPUT350::GameContext *context, const CMPUT350::Point2D &tar
     float direction = start.x < context->ScreenContext->GetWindowWidth() / 2.0f ? 1.0f : -1.0f; 
 
     // AI used for the offset calculations
-    // Circular pattern
-    float r = context->ScreenContext->GetWindowWidth() * 0.15f;
+    // A deeper oval keeps the heavy enemy downscreen longer, with enough
+    // time to fire its full burst before returning to formation.
+    float r = context->ScreenContext->GetWindowWidth() * 0.20f;
+    float h = (context->ScreenContext->GetWindowHeight() - start.y - 60.0f) * 0.75f;
     float k = 0.55228475f; // Control-point factor for a quarter circle
 
     std::vector<CMPUT350::Point2D> offsets = {
         {0, 0}, // Start at left side of circle
 
-        {0, k*r}, {(1-k)*r, r}, {r, r},       // Down to bottom
-        {(1+k)*r, r}, {2*r, k*r}, {2*r, 0},   // Around to right side
-        {2*r, -k*r}, {(1+k)*r, -r}, {r, -r},  // Up to top
-        {(1-k)*r, -r}, {0, -k*r}, {0, 0}      // Back to start
+        {0, k*h}, {(1-k)*r, h}, {r, h},       // Down to bottom
+        {(1+k)*r, h}, {2*r, k*h}, {2*r, 0},   // Around to right side
+        {2*r, -k*h}, {(1+k)*r, -h}, {r, -h},  // Up to top
+        {(1-k)*r, -h}, {0, -k*h}, {0, 0}      // Back to start
     };
 
     for (auto& point : offsets) {
@@ -318,7 +327,7 @@ bool Enemy2::Attack(CMPUT350::GameContext *context, const CMPUT350::Point2D &tar
     offsets.back() = formationLocation;
 
     shotsFired = 0;
-    nextShotFrame = context->currentFrame + shotCooldown * 3;
+    nextShotFrame = context->currentFrame + shotCooldown;
     SetPath(offsets);
     state = State::Attacking;
     return true;
@@ -335,7 +344,7 @@ Enemy3::Enemy3(CMPUT350::Point2D loc, const std::vector<CMPUT350::Point2D> &path
         maxShots = 30;
         health = 2;
         shotCooldown = 10;
-        bulletSpeed = 2.0f;
+        bulletSpeed = 12.0f;
         pointsAwarded = 200;
         color = CMPUT350::Colors::red;
     }
@@ -347,7 +356,7 @@ bool Enemy3::Attack(CMPUT350::GameContext* context, const CMPUT350::Point2D& tar
     }
 
     // AI-assisted: two sine-like waves drifting inward, then an offscreen
-    // crossing and an upward curve back to the original formation position.
+    // crossing, two upward waves, and a curve back to formation.
     auto start = GetLocation();
     float screenWidth = context->ScreenContext->GetWindowWidth();
     float screenHeight = context->ScreenContext->GetWindowHeight();
@@ -376,11 +385,20 @@ bool Enemy3::Attack(CMPUT350::GameContext* context, const CMPUT350::Point2D& tar
     points.emplace_back(oppositeX, offscreenY + 80.0f);
     points.emplace_back(oppositeX, offscreenY);
 
-    // Rise on the opposite side, then curve across into formation.
+    // Use the same small waves while rising on the opposite side.
     float returnY = formationLocation.y + 80.0f;
-    points.emplace_back(oppositeX, offscreenY - drop / 3.0f);
-    points.emplace_back(oppositeX, returnY + drop / 3.0f);
-    points.emplace_back(oppositeX, returnY);
+    float rise = offscreenY - returnY;
+    for (int i = 0; i < 4; ++i) {
+        float wave = (i % 2 == 0 ? -direction : direction) * waveWidth * 4.0f / 3.0f;
+        float first = (i + 1.0f / 3.0f) / 4.0f;
+        float second = (i + 2.0f / 3.0f) / 4.0f;
+        float end = (i + 1.0f) / 4.0f;
+        points.emplace_back(oppositeX + wave, offscreenY - rise * first);
+        points.emplace_back(oppositeX + wave, offscreenY - rise * second);
+        points.emplace_back(oppositeX, offscreenY - rise * end);
+    }
+
+    // Finish by curving across into the original formation slot.
     points.emplace_back(oppositeX, formationLocation.y - 60.0f);
     points.emplace_back(formationLocation.x, formationLocation.y - 60.0f);
     points.push_back(formationLocation);

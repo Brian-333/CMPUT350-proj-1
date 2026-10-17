@@ -20,7 +20,7 @@ When two line segments overlap at multiple points, `Line::Crosses` returns the f
 
 ### Enemy path movement
 
-`Enemy::SetPath` samples each cubic segment 100 times and stores cumulative distances. `AdvancePath` advances 3 pixels per frame, looks up the corresponding Bezier parameter, and updates position and rotation. Speed is approximate because distances are sampled. Call `SetPath` whenever assigning an entrance, attack, or return path so the table and travelled distance reset together.
+`Enemy::SetPath` samples each cubic segment 100 times and stores cumulative distances. `AdvancePath` advances 9 pixels per frame, looks up the corresponding Bezier parameter, and updates position and rotation. Speed is approximate because distances are sampled. Call `SetPath` whenever assigning an entrance, attack, or return path so the table and travelled distance reset together.
 
 ## Library Versions
 
@@ -29,6 +29,21 @@ SFML - version 3.1.0
 ## Resources
 
 ### AI Usage
+
+- Codex prompt: "Theres a bug right now where if player dies during wave phase, the lives are not subtracted"
+    - AI centralized death detection for Waves and Gameplay, deducting a life once and keeping respawns pending until entrances finish. Removed the wave-specific flag assignment that bypassed life deduction. Final-life deaths enter GameOver immediately, and spawning during Startup clears a pending respawn. Headless checks passed for wave deaths, single deductions, delayed respawning, final-life game over, and next-level spawning. The full CMake build passed.
+
+- Codex prompt: "for the attacking, lets do 4 cases. I want the first case to be what we have, just the first 3 enemies. Then the next case, i want it to do every other enemy (max of 4) starting at the 3rd enemy. Then I want the first 2 and last 2. And for the last case start at maybe enemy 5 and grab 6 enemies in a row"
+    - The student supplied the four patterns. AI implemented a repeating switch over living enemies in engine order: first three; third/fifth/seventh/ninth; first two plus last two; and six starting at fifth with wraparound. Groups never select the same enemy twice, and selection resets each level/game. Existing pauses between groups are preserved. Headless checks passed for all patterns with 1-10 living enemies, dead-object filtering, wraparound, and pattern cycling. Full gameplay review remains to be completed.
+
+- Codex prompt: "The 3rd enemy does not do its little sine wave on the way back up"
+    - AI replaced Enemy3's straight ascent with four cubic half-waves (two cycles), using the existing wave width and mirroring. The final return to formation remains a separate curve. Headless checks passed for oscillation during ascent on both sides and arrival at the formation slot; visual gameplay review remains to be completed.
+
+- Codex prompt: "before we do that, enemy2 is only firing 2 shots for some reason and its circle is too small, i would like it to loop further down the screen, also enemy attacks start immediately after they are finished if the player is alive and i would like that to be slightly offset"
+    - AI enlarged Enemy2's loop into a deeper oval and reduced its initial firing delay to one cooldown. AI also added a 45-frame pause measured from attack-group completion, with the same grace period after wave entry and player respawning. Headless checks confirmed eight shots from Enemy2 at three formation heights and a full pause after a long attack. Visual gameplay review remains to be completed.
+
+- Codex prompt: "Ok so the enemies dont really spawn in uniformly and they just sort of snap into place when they are done spawning, also they are way too slow for their movement"
+    - AI increased path speed from 3 to 9 pixels/frame, shortened row-spawn intervals from 360 to 120 frames, and added a gradual transition into formation hovering and rotation. A headless check passed for row spacing and smooth arrival; visual gameplay review remains to be completed.
 
 - Galaga wave spawning (`Galaga::Update`, `State::Waves`): I supplied the wave ideas, enemy groupings, entrance directions, and the existing switch/for-loop structure. Codex implemented the actual spawning and Bezier control-point calculations, formation positions, offscreen starting distances, and expansion to eight enemies per row. AI also added initial frame-based wave timing; automatic wave progression is still unfinished. The wave case is marked with an AI-assisted comment.
     - Prompts requested: a synchronized left-side entrance for the first row; normal middle ships followed by heavy edge ships in row 2; bottom-corner entrances through the player for row 3; normal ships split between bottom-right and left entrances for row 4; and normal outer ships, crossing special ships, and central heavy ships for row 5.

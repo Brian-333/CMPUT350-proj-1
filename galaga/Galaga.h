@@ -36,6 +36,10 @@ private:
     int currWave = 1;
     bool startUpPending = false;
     int returnToHomeFrame = 0;
+    int nextEnemyAttackFrame = 0;
+    int enemyAttackPauseFrames = 45; // Pause after an attack group finishes.
+    bool attackGroupActive = false;
+    int attackPattern = 0;
     int enemyCount = 0;
     int playerScore = 0;
     int playerLives = 3;

@@ -7,12 +7,19 @@
 
 Galaga::Galaga(int width, int height): screenWidth(width), screenHeight(height) 
 {
-    playerSpawn = CMPUT350::Point2D(screenWidth / 2.f, screenHeight * 0.75f);
+    playerSpawn = CMPUT350::Point2D(screenWidth / 2.f, screenHeight * 0.6f);
 }
 
 void Galaga::Initialize(CMPUT350::GameContext* context) {
     auto* notifications = context->mNotificationManager;
     context->mEngineView->InstallKeyDownNotification(CMPUT350::Key::Num5, "InsertCoin");
+    context->mEngineView->InstallKeyDownNotification(CMPUT350::Key::Num1, "StartGame");
+    context->mEngineView->InstallKeyDownNotification(CMPUT350::Key::A, "MoveLeftDown");
+    context->mEngineView->InstallKeyDownNotification(CMPUT350::Key::D, "MoveRightDown");
+    context->mEngineView->InstallKeyUpNotification(CMPUT350::Key::A, "MoveLeftUp");
+    context->mEngineView->InstallKeyUpNotification(CMPUT350::Key::D, "MoveRightUp");
+    context->mEngineView->InstallKeyDownNotification(CMPUT350::Key::Space, "Fire");
+
     notifications->Register(context->CurrObject, "InsertCoin");
     notifications->Register(context->CurrObject, "StartGame");
     notifications->Register(context->CurrObject, "EnemyDestroyed:100");
@@ -23,6 +30,21 @@ void Galaga::Initialize(CMPUT350::GameContext* context) {
 }
 
 void Galaga::Update(CMPUT350::GameContext* context) {
+    // AI-assisted: count deaths in both active phases, even if the engine
+    // still holds the killed player until its next removal pass.
+    if ((state == State::Waves || state == State::Gameplay) && !respawnPending) {
+        auto currentPlayer = player.lock();
+        if (!currentPlayer || !currentPlayer->IsAlive()) {
+            respawnPending = true;
+            playerLives -= 1;
+            if (playerLives <= 0) {
+                returnToHomeFrame = context->currentFrame + 150;
+                state = State::GameOver;
+                return;
+            }
+        }
+    }
+
     switch (state) {
         case (State::Waiting): {
             break;
@@ -36,6 +58,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                 auto newPlayer = std::make_shared<Player>(playerSpawn);
                 player = newPlayer;
                 context->mEngineView->AddGameObject(newPlayer);
+                respawnPending = false;
             }
             
             if (context->currentFrame >= startAtFrame) {
@@ -72,7 +95,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
 
                         currWave += 1;
                         // Give the first row time to enter before wave 2
-                        nextWaveFrame = context->currentFrame + 360;
+                        nextWaveFrame = context->currentFrame + 120;
                         break;
                     }
                     case (2): {
@@ -104,7 +127,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                         }
 
                         currWave += 1;
-                        nextWaveFrame = context->currentFrame + 360;
+                        nextWaveFrame = context->currentFrame + 120;
                         break;
                     }
                     case (3): {
@@ -149,7 +172,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                         }
 
                         currWave += 1;
-                        nextWaveFrame = context->currentFrame + 360;
+                        nextWaveFrame = context->currentFrame + 120;
                         break;
                     }
                     case (4): {
@@ -194,7 +217,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                         }
 
                         currWave += 1;
-                        nextWaveFrame = context->currentFrame + 360;
+                        nextWaveFrame = context->currentFrame + 120;
                         break;
                     }
                     case (5): {
@@ -265,6 +288,9 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                             wavePending = false;
                             state = State::Gameplay;
                             currWave = 1;
+                            attackGroupActive = false;
+                            attackPattern = 0;
+                            nextEnemyAttackFrame = context->currentFrame + enemyAttackPauseFrames;
                         }
                     }
                 }
@@ -272,15 +298,6 @@ void Galaga::Update(CMPUT350::GameContext* context) {
             break;
         }
         case (State::Gameplay): {
-            if (player.expired() && !respawnPending) {  // player has just died
-                respawnPending = true;
-                playerLives -= 1;
-                if (playerLives <= 0) {
-                    returnToHomeFrame = context->currentFrame + 360;
-                    state = State::GameOver;
-                    break;
-                }
-            }
             if (enemyCount == 0) {  // progress to next level
                 level += 1;
                 startUpPending = true;
@@ -296,24 +313,103 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                 }
             }
 
+            // Start the pause when the last attacker finishes, rather than
+            // while the group is still flying its paths.
+            if (attackGroupActive && !enemiesAttacking) {
+                nextEnemyAttackFrame = context->currentFrame + enemyAttackPauseFrames;
+            }
+            attackGroupActive = enemiesAttacking;
+
             if (respawnPending && !enemiesAttacking) {  // only respawn player when enemies are done attacking
                 auto newPlayer = std::make_shared<Player>(playerSpawn);
                 player = newPlayer;
                 context->mEngineView->AddGameObject(newPlayer);
                 respawnPending = false;
+                nextEnemyAttackFrame = context->currentFrame + enemyAttackPauseFrames;
             }
 
             auto currPlayer = player.lock();
             if (!enemiesAttacking && currPlayer && 
-                currPlayer->IsAlive() && !respawnPending) 
+                currPlayer->IsAlive() && !respawnPending
+                && context->currentFrame >= nextEnemyAttackFrame) 
             {   // only have enemies attack when the player is alive and no other enemies are attacking
+                std::vector<std::shared_ptr<Enemy>> enemies;
+                for (auto object : *context->mEngineView) {
+                    auto enemy = std::dynamic_pointer_cast<Enemy>(object);
+                    if (enemy && enemy->IsAlive()) {
+                        enemies.push_back(enemy);
+                    }
+                }
 
+                // AI-assisted: cycle through the student's four selection
+                // patterns, counting only living enemies in engine order.
+                int count = static_cast<int>(enemies.size());
+                std::vector<int> selected;
+                switch (attackPattern) {
+                    case 0: { // First three.
+                        for (int i = 0; i < count && i < 3; i++) {
+                            selected.push_back(i);
+                        }
+                        break;
+                    }
+                    case 1: { // Third, fifth, seventh, ninth (up to four).
+                        for (int i = 2; i < count && selected.size() < 4; i += 2) {
+                            selected.push_back(i);
+                        }
+                        break;
+                    }
+                    case 2: { // First two and last two, without duplicates.
+                        for (int i = 0; i < count; i++) {
+                            if (i < 2 || i >= count - 2) {
+                                selected.push_back(i);
+                            }
+                        }
+                        break;
+                    }
+                    case 3: { // Six consecutive enemies from fifth, wrapping.
+                        for (int i = 0; i < count && i < 6; i++) {
+                            selected.push_back((4 + i) % count);
+                        }
+                        break;
+                    }
+                }
 
+                int attacksUsed = 0;
+                for (int index : selected) {
+                    if (enemies[index]->Attack(context, currPlayer->GetLocation())) {
+                        attacksUsed += 1;
+                    }
+                }
+                attackPattern = (attackPattern + 1) % 4;
+                attackGroupActive = attacksUsed > 0;
+                if (!attackGroupActive) {
+                    nextEnemyAttackFrame = context->currentFrame + enemyAttackPauseFrames;
+                }
             }
             break;
         }
         case (State::GameOver): {
             if (context->currentFrame >= returnToHomeFrame) {
+                for (auto& object : *context->mEngineView) {
+                    auto galaga = std::dynamic_pointer_cast<Galaga>(object);
+                    if (galaga) {
+                        continue;
+                    }
+                    object->Kill();
+                }
+                playerLives = 3;
+                playerScore = 0;
+                level = 1;
+                enemyCount = 0;
+                currWave = 1;
+                wavePending = false;
+                respawnPending = false;
+                attackGroupActive = false;
+                attackPattern = 0;
+                nextEnemyAttackFrame = 0;
+                startUpPending = false;
+                coinInserted = false;
+                
                 state = State::Waiting;
             }
             break;
@@ -327,6 +423,15 @@ void Galaga::RenderUI(CMPUT350::GameContext* context) {
         24,
         CMPUT350::Point2D(20, 20),
         CMPUT350::Colors::white);
+    
+    if (respawnPending && state != State::GameOver) {
+            context->GUIContext->DrawCenteredText(
+                "Lives: " + std::to_string(playerLives),
+                24,
+                CMPUT350::Point2D(screenWidth / 2.f, screenHeight / 2.f),
+                CMPUT350::Colors::white
+            );
+        }
 
     switch (state) {
         case (State::Waiting): {
@@ -355,29 +460,48 @@ void Galaga::RenderUI(CMPUT350::GameContext* context) {
             );
             break;
         }
+        case (State::Waves): {
+            break;
+        }
+        case (State::Gameplay): {
+            break;
+        }
+        case (State::GameOver): {
+            context->GUIContext->DrawCenteredText(
+                "Game Over!",
+                24,
+                CMPUT350::Point2D(screenWidth / 2.f, screenHeight / 2.f),
+                CMPUT350::Colors::white
+            );
+            break;
+        }
     }
 }
 
 void Galaga::ReceiveNotification(const std::string& key) {
     if (key == "EnemyDestroyed:100") {
+        if (state == State::Waiting || state == State::GameOver) return;
         enemyCount -= 1;
         playerScore += 100;
     } else if (key == "EnemyDestroyed:150") {
+        if (state == State::Waiting || state == State::GameOver) return;
         enemyCount -= 1;
         playerScore += 150;
     } else if (key == "EnemyDestroyed:200") {
+        if (state == State::Waiting || state == State::GameOver) return;
         enemyCount -= 1;
         playerScore += 200;
     } else if (key == "EnemyDestroyed:300") {
+        if (state == State::Waiting || state == State::GameOver) return;
         enemyCount -= 1;
         playerScore += 300;
     } else if (key == "EnemyDestroyed:400") {
+        if (state == State::Waiting || state == State::GameOver) return;
         enemyCount -= 1;
         playerScore += 400;
     } else if (key == "InsertCoin") {
         if (state == State::Waiting) {
             coinInserted = true;
-            std::cout << "COIN INSERTED :D" << std::endl;
         }
     } else if (key == "StartGame") {
         if (coinInserted && state == State::Waiting) {
