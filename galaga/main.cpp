@@ -2,7 +2,7 @@
 #include "Player.h"
 #include "Galaga.h"
 
-const bool gUseCollisionDemo = true;
+const bool gUseCollisionDemo = false;
 
 class Ball : public CMPUT350::CollisionObject
 {
@@ -115,7 +115,6 @@ public:
 		return mBounds;
 	}
 	
-	bool IsStatic() const override { return false; }
 	
 	const std::vector<CMPUT350::Shape> &GetShapes() override
 	{
@@ -196,7 +195,6 @@ public:
 		return mBounds;
 	}
 	
-	bool IsStatic() const override { return false; }
 	
 	const std::vector<CMPUT350::Shape> &GetShapes() override
 	{
