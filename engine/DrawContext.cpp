@@ -118,7 +118,7 @@ void DrawContext::FrameRect(Rect r, float width, RGBColor c) {
     rectangle.setOutlineColor(sf::Color(c.r, c.g, c.b));
     rectangle.setFillColor(sf::Color(0, 0, 0, 0));
     rectangle.setOutlineThickness(width);
-    rectangle.setRotation(sf::degrees(mContextRotation));
+    rectangle.setRotation(sf::radians(mContextRotation));
 
     mWindow->draw(rectangle);
 }
@@ -175,10 +175,20 @@ int DrawContext::GetWindowWidth() { return mWindow->getSize().x; }
 int DrawContext::GetWindowHeight() { return mWindow->getSize().y; }
 
 
+/**
+ * @brief Sets the world-space offset applied by subsequent transforms and draws.
+ *
+ * @param p The object location used as the rotation/draw origin.
+ */
 void DrawContext::SetContextOffset(Point2D p) {
     mContextOffset = p;
 }
 
+/**
+ * @brief Sets the rotation (radians) applied by subsequent transforms and draws.
+ *
+ * @param rotation The object rotation around the context offset.
+ */
 void DrawContext::SetContextRotation(float rotation) {
     mContextRotation = rotation;
 }
