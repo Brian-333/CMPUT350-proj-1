@@ -1,5 +1,6 @@
 #include "NotificationManager.h"
 #include <algorithm>
+#include <stdexcept>
 
 namespace CMPUT350 {
 
