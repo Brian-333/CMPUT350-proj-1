@@ -1,4 +1,5 @@
 #include "DrawContext.h"
+#include "MathUtil.h"
 
 // TODO: Add error handling for invalid window or font
 
@@ -11,7 +12,7 @@ namespace CMPUT350 {
  * @param font The font used when drawing text.
  */
 DrawContext::DrawContext(std::shared_ptr<sf::RenderWindow> window, std::shared_ptr<sf::Font> font)
-    : mWindow(window), mFont(font) {}
+    : mWindow(window), mFont(font), mContextOffset(0, 0), mContextRotation(0) {}
 
 /**
  * @brief Draws text centered on a point with a specified size and color.
@@ -26,11 +27,11 @@ DrawContext::DrawContext(std::shared_ptr<sf::RenderWindow> window, std::shared_p
  */
 void DrawContext::DrawCenteredText(const std::string &text, int pixelSize, Point2D p, RGBColor c) {
     sf::Text printedText(*mFont);
-
+    Point2D transformedPoint = Transform(p);
     printedText.setString(text);
     printedText.setCharacterSize(pixelSize);
     printedText.setFillColor(sf::Color(c.r, c.g, c.b));
-    printedText.setPosition({p.x - printedText.getGlobalBounds().size.x / 2, p.y - printedText.getGlobalBounds().size.y / 2});
+    printedText.setPosition({transformedPoint.x - printedText.getGlobalBounds().size.x / 2, transformedPoint.y - printedText.getGlobalBounds().size.y / 2});
     
     mWindow->draw(printedText);
 }
@@ -47,11 +48,11 @@ void DrawContext::DrawCenteredText(const std::string &text, int pixelSize, Point
  */
 void DrawContext::DrawText(const std::string &text, int pixelSize, Point2D p, RGBColor c) {
     sf::Text printedText(*mFont);
-
+    Point2D transformedPoint = Transform(p);
     printedText.setString(text);
     printedText.setCharacterSize(pixelSize);
     printedText.setFillColor(sf::Color(c.r, c.g, c.b));
-    printedText.setPosition({p.x, p.y});
+    printedText.setPosition({transformedPoint.x, transformedPoint.y});
     
     mWindow->draw(printedText);
 }
@@ -68,9 +69,10 @@ void DrawContext::DrawText(const std::string &text, int pixelSize, Point2D p, RG
  */
 void DrawContext::DrawCircle(Point2D p, float radius, RGBColor c) {
     sf::CircleShape circle(radius);
+    Point2D transformedPoint = Transform(p);
 
     circle.setFillColor(sf::Color(c.r, c.g, c.b));
-    circle.setPosition({p.x, p.y});
+    circle.setPosition({transformedPoint.x, transformedPoint.y});
     circle.setOrigin({radius, radius});
     
     mWindow->draw(circle);
@@ -87,10 +89,12 @@ void DrawContext::DrawCircle(Point2D p, float radius, RGBColor c) {
  */
 void DrawContext::DrawRect(Rect r, RGBColor c) {
     sf::RectangleShape rectangle;
-    
-    rectangle.setPosition({r.topLeft.x, r.topLeft.y});
+    Point2D newTopLeft = Transform(r.topLeft);
+
+    rectangle.setPosition({newTopLeft.x, newTopLeft.y});
     rectangle.setSize({r.width, r.height});
     rectangle.setFillColor(sf::Color(c.r, c.g, c.b));
+    rectangle.setRotation(sf::radians(mContextRotation));
 
     mWindow->draw(rectangle);
 }
@@ -106,13 +110,15 @@ void DrawContext::DrawRect(Rect r, RGBColor c) {
  * the associated window.
  */
 void DrawContext::FrameRect(Rect r, float width, RGBColor c) {
+    Point2D newTopLeft = Transform(r.topLeft);
     sf::RectangleShape rectangle;
     
-    rectangle.setPosition({r.topLeft.x, r.topLeft.y});
+    rectangle.setPosition({newTopLeft.x, newTopLeft.y});
     rectangle.setSize({r.width, r.height});
     rectangle.setOutlineColor(sf::Color(c.r, c.g, c.b));
     rectangle.setFillColor(sf::Color(0, 0, 0, 0));
     rectangle.setOutlineThickness(width);
+    rectangle.setRotation(sf::degrees(mContextRotation));
 
     mWindow->draw(rectangle);
 }
@@ -147,7 +153,9 @@ void DrawContext::DrawLine(Point2D from, Point2D to, float width, RGBColor c) {
     polygon.setPoint(3, {from.x + offset.x, from.y + offset.y});
 
     polygon.setFillColor(sf::Color(c.r, c.g, c.b));
-    polygon.setPosition({0, 0});
+    Point2D newOrigin = Transform(Point2D(0, 0));
+    polygon.setPosition({newOrigin.x, newOrigin.y});
+    polygon.setRotation(sf::radians(mContextRotation));
 
     mWindow->draw(polygon);
 }
@@ -165,5 +173,69 @@ int DrawContext::GetWindowWidth() { return mWindow->getSize().x; }
  * @return The window height in pixels.
  */
 int DrawContext::GetWindowHeight() { return mWindow->getSize().y; }
+
+
+void DrawContext::SetContextOffset(Point2D p) {
+    mContextOffset = p;
+}
+
+void DrawContext::SetContextRotation(float rotation) {
+    mContextRotation = rotation;
+}
+
+/**
+ * @brief Transforms a point by the context offset and rotation.
+ *
+ * @param p The point to transform (Point2D).
+ * @return The transformed point (Point2D).
+ */
+Point2D DrawContext::Transform(Point2D p) {
+    float c = std::cos(mContextRotation);
+    float s = std::sin(mContextRotation);
+    Point2D rotated(p.x * c - p.y * s, p.x * s + p.y * c);
+    return rotated + mContextOffset;
+
+}
+
+/**
+ * @brief Reverses the transformation of a point by the context offset and rotation.
+ *
+ * @param p The point to reverse transform (Point2D).
+ * @return The reversed transformed point (Point2D).
+ */
+Point2D DrawContext::ReverseTransform(Point2D p) {
+    Point2D local = p - mContextOffset;
+    float c = std::cos(-mContextRotation);
+    float s = std::sin(-mContextRotation);
+    return Point2D(local.x * c - local.y * s, local.x * s + local.y * c);
+}
+
+/**
+ * @brief Rotates rectangle and computes new bounding box after rotation
+ * 
+ * This will provide a new AABB around the rotated rectangle
+ *
+ * @param r The rectangle to rotate (Rect).
+ * @return The transformed rectangle (Rect).
+ */
+Rect DrawContext::Transform(Rect r) {
+    static Point2D topLeft;
+    static Point2D topRight;
+    static Point2D bottomRight;
+    static Point2D bottomLeft;
+    static Point2D newTopLeft;
+    static Point2D newBottomRight;
+    topLeft = Transform(r.topLeft);
+    topRight = Transform(Point2D(r.topLeft.x + r.width, r.topLeft.y));
+    bottomRight = Transform(Point2D(r.topLeft.x + r.width, r.topLeft.y + r.height));
+    bottomLeft = Transform(Point2D(r.topLeft.x, r.topLeft.y + r.height));
+    newTopLeft = Point2D(
+        std::min(topLeft.x, std::min(topRight.x, std::min(bottomRight.x, bottomLeft.x))),
+        std::min(topLeft.y, std::min(topRight.y, std::min(bottomRight.y, bottomLeft.y))));
+    newBottomRight = Point2D(
+        std::max(topLeft.x, std::max(topRight.x, std::max(bottomRight.x, bottomLeft.x))),
+        std::max(topLeft.y, std::max(topRight.y, std::max(bottomRight.y, bottomLeft.y))));
+    return Rect(newTopLeft, newBottomRight);
+}
 
 }  // namespace CMPUT350

@@ -31,6 +31,7 @@ GameEngine::GameEngine(unsigned int width, unsigned int height, const std::strin
         std::cerr << "WARNING: Font did not load." << "\n";
     }
     mGameContext.ScreenContext = new DrawContext(mWindow, font);
+    mGameContext.GUIContext = new DrawContext(mWindow, font);
     mGameContext.mNotificationManager = new NotificationManager();
     mGameContext.mEngineView = this;
 }
@@ -45,6 +46,9 @@ GameEngine::~GameEngine() {
     // Clean up game objects
     if (mGameContext.ScreenContext) {
         delete mGameContext.ScreenContext;
+    }
+    if (mGameContext.GUIContext) {
+        delete mGameContext.GUIContext;
     }
     if (mGameContext.mNotificationManager) {
         delete mGameContext.mNotificationManager;
@@ -116,8 +120,19 @@ GameEngine::const_iterator GameEngine::end() const { return mGameObjects.end(); 
  * @param object2 The second collision object.
  */
 void GameEngine::ProcessCollision(std::shared_ptr<CollisionObject> object1, std::shared_ptr<CollisionObject> object2) {
-    Rect bounds = object1->GetBounds();
-    bounds &= object2->GetBounds();
+    static Rect bounds;
+    static Rect bounds2;
+    mGameContext.ScreenContext->SetContextOffset(object1->GetLocation());
+    mGameContext.ScreenContext->SetContextRotation(object1->GetRotation());
+    bounds = mGameContext.ScreenContext->Transform(object1->GetBounds());
+    // mGameContext.GUIContext->FrameRect(bounds, 5, Colors::green);
+
+    mGameContext.ScreenContext->SetContextOffset(object2->GetLocation());
+    mGameContext.ScreenContext->SetContextRotation(object2->GetRotation());
+    bounds2 = mGameContext.ScreenContext->Transform(object2->GetBounds());
+    // mGameContext.GUIContext->FrameRect(bounds2, 5, Colors::green);
+    bounds &= bounds2;
+
     if (bounds.width > 0 && bounds.height > 0) {
         object1->CollisionEnter(object2);
         object2->CollisionEnter(object1);
@@ -225,6 +240,9 @@ void GameEngine::Run() {
         for (auto gameObject : mGameObjects) {
             std::shared_ptr<GraphicsObject> graphicsObject = std::dynamic_pointer_cast<GraphicsObject>(gameObject);
             if (graphicsObject) {
+                mGameContext.CurrObject = gameObject;
+                mGameContext.ScreenContext->SetContextOffset(graphicsObject->GetLocation());
+                mGameContext.ScreenContext->SetContextRotation(graphicsObject->GetRotation());
                 graphicsObject->RenderBackground(&mGameContext);
             }
         }
@@ -233,8 +251,17 @@ void GameEngine::Run() {
         for (auto gameObject : mGameObjects) {
             std::shared_ptr<GraphicsObject> graphicsObject = std::dynamic_pointer_cast<GraphicsObject>(gameObject);
             if (graphicsObject) {
+                mGameContext.CurrObject = gameObject;
+                mGameContext.ScreenContext->SetContextOffset(graphicsObject->GetLocation());
+                mGameContext.ScreenContext->SetContextRotation(graphicsObject->GetRotation());
                 graphicsObject->RenderForeground(&mGameContext);
             }
+        }
+
+        // 8. Render GUI
+        for (auto gameObject : mGameObjects) {
+            mGameContext.CurrObject = gameObject;
+            gameObject->RenderUI(&mGameContext);
         }
         // Draw collision bounds
         // for (int i = 0; i < mGameObjects.size(); i++) {

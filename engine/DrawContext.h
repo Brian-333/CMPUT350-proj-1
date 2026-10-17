@@ -43,6 +43,9 @@ public:
 private:
     std::shared_ptr<sf::RenderWindow> mWindow;
     std::shared_ptr<sf::Font> mFont;
+
+    Point2D mContextOffset;
+    float mContextRotation;
     
 	friend class GameEngine;
 	void SetContextOffset(Point2D p);
