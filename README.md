@@ -2,11 +2,17 @@
 
 ## Design Choices
 
+### Lives display
+
+We chose to display the player's remaining lives while the player is waiting to respawn.
+After wave entry or attacking enemies finish, a 60-frame (two-second) delay keeps this message visible before the replacement player spawns.
+
 
 ### Keybinding
 
-Keys can have custom binding.  
-The key "P" is reserved for pausing the game so it cannot be override to use for other functions.  
+Press **K** at the main screen to configure controls. Press an action's current key to select it, then press its replacement. **Escape** cancels a pending change or returns to the main screen. Duplicate bindings are rejected, and K, Escape, 1, 5, and P remain reserved. Changes persist across games during the current run.
+
+Rebinding is handled entirely by Galaga using the engine's existing notification API. Galaga installs key-down/key-up messages for all scancodes except the engine-reserved pause key P, then translates those messages into the currently assigned gameplay actions. Changing a binding only updates Galaga's action-to-key table; no engine mappings are removed. For example, after changing Move Left from A to Left Arrow, A still generates a key notification but matches no action, while Left Arrow forwards the existing MoveLeftDown/MoveLeftUp messages to the player. The player code does not need to change. This implements the keyboard setup screen extra credit.
 
 ### Game Engine
 
@@ -29,6 +35,12 @@ SFML - version 3.1.0
 ## Resources
 
 ### AI Usage
+
+- Codex prompts: "Ok, can you finish up the keybind implementation that I started" and "I undid it, can you only change the galaga and nothing in the game engine? Also we dont need to be able to remove keybinds, keep it simple. We can just select the keybind we want to change by pressing that keybind rather than scrolling to it. Would that simplify the implementation?"
+    - The student supplied the Keybinds state, initial screen work, and the requirement to select actions by their current key without changing the engine or removing mappings. AI completed the implementation in Galaga.h/.cpp: raw-key notification registration, the action-to-key lookup, menu rendering, replacement/conflict handling, key labels, and suppression of repeated key-down events. The earlier engine-based implementation was undone; the final version leaves engine and player code unchanged. Headless checks passed for selection, replacement, cancellation, reserved/duplicate keys, unchanged engine mappings, player movement/release/fire, and persistence across games. The full CMake build passed. Visual gameplay review and the team's reflection remain to be completed.
+
+- Codex prompt: "Add a respawn delay for me"
+    - AI added a 60-frame respawn countdown that starts after wave entry and attacking enemies finish. Lives remain visible during the wait, and a simultaneous level clear waits for the respawn before starting the next level. Headless checks passed for timing, single life deductions/spawns, post-respawn attack grace, wave deaths, simultaneous level clear/death, and final-life game over.
 
 - Codex prompt: "Theres a bug right now where if player dies during wave phase, the lives are not subtracted"
     - AI centralized death detection for Waves and Gameplay, deducting a life once and keeping respawns pending until entrances finish. Removed the wave-specific flag assignment that bypassed life deduction. Final-life deaths enter GameOver immediately, and spawning during Startup clears a pending respawn. Headless checks passed for wave deaths, single deductions, delayed respawning, final-life game over, and next-level spawning. The full CMake build passed.

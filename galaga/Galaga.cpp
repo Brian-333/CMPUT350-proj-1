@@ -5,20 +5,55 @@
 #include "Keyboard.h"
 #include <iostream>
 
+namespace {
+// AI-assisted: keep readable key labels in game code without an SFML dependency.
+std::string KeyName(int key) {
+    using namespace CMPUT350;
+    if (key >= Key::A && key <= Key::Z) return std::string(1, 'A' + key - Key::A);
+    if (key >= Key::Num1 && key <= Key::Num9) return std::to_string(key - Key::Num1 + 1);
+    switch (key) {
+        case Key::Num0: return "0";
+        case Key::Space: return "Space";
+        case Key::Left: return "Left Arrow";
+        case Key::Right: return "Right Arrow";
+        case Key::Up: return "Up Arrow";
+        case Key::Down: return "Down Arrow";
+        case Key::Enter: return "Enter";
+        case Key::Tab: return "Tab";
+        case Key::Backspace: return "Backspace";
+        case Key::LShift: return "Left Shift";
+        case Key::RShift: return "Right Shift";
+        case Key::LControl: return "Left Control";
+        case Key::RControl: return "Right Control";
+        default: return "Key " + std::to_string(key);
+    }
+}
+}
+
 Galaga::Galaga(int width, int height): screenWidth(width), screenHeight(height) 
 {
+    bindings = {{
+        {"Move Left", CMPUT350::Key::A, "MoveLeftDown", "MoveLeftUp"},
+        {"Move Right", CMPUT350::Key::D, "MoveRightDown", "MoveRightUp"},
+        {"Fire", CMPUT350::Key::Space, "Fire", ""}
+    }};
+    keysHeld.resize(CMPUT350::Key::ScanCount, false);
     playerSpawn = CMPUT350::Point2D(screenWidth / 2.f, screenHeight * 0.6f);
 }
 
 void Galaga::Initialize(CMPUT350::GameContext* context) {
-    auto* notifications = context->mNotificationManager;
-    context->mEngineView->InstallKeyDownNotification(CMPUT350::Key::Num5, "InsertCoin");
-    context->mEngineView->InstallKeyDownNotification(CMPUT350::Key::Num1, "StartGame");
-    context->mEngineView->InstallKeyDownNotification(CMPUT350::Key::A, "MoveLeftDown");
-    context->mEngineView->InstallKeyDownNotification(CMPUT350::Key::D, "MoveRightDown");
-    context->mEngineView->InstallKeyUpNotification(CMPUT350::Key::A, "MoveLeftUp");
-    context->mEngineView->InstallKeyUpNotification(CMPUT350::Key::D, "MoveRightUp");
-    context->mEngineView->InstallKeyDownNotification(CMPUT350::Key::Space, "Fire");
+    notifications = context->mNotificationManager;
+    // AI-assisted: use existing engine APIs to report raw key messages to
+    // Galaga. Galaga translates them to actions, so rebinding just changes a key.
+    for (int key = 0; key < static_cast<int>(CMPUT350::Key::ScanCount); key++) {
+        if (key == CMPUT350::Key::P) continue; // Engine reserves pause.
+        std::string down = "KeyDown:" + std::to_string(key);
+        std::string up = "KeyUp:" + std::to_string(key);
+        context->mEngineView->InstallKeyDownNotification(key, down);
+        context->mEngineView->InstallKeyUpNotification(key, up);
+        notifications->Register(context->CurrObject, down);
+        notifications->Register(context->CurrObject, up);
+    }
 
     notifications->Register(context->CurrObject, "InsertCoin");
     notifications->Register(context->CurrObject, "StartGame");
@@ -29,6 +64,74 @@ void Galaga::Initialize(CMPUT350::GameContext* context) {
     notifications->Register(context->CurrObject, "EnemyDestroyed:400");
 }
 
+// AI-assisted: select an action with its existing key, then accept a new key.
+// All mapping decisions stay here; Player still receives its original messages.
+void Galaga::HandleKey(int key, bool pressed) {
+    using namespace CMPUT350;
+    if (key < 0 || key >= static_cast<int>(Key::ScanCount)) return;
+    if (pressed && keysHeld[key]) return; // Ignore OS key-repeat events.
+    keysHeld[key] = pressed;
+
+    if (state == State::Keybinds) {
+        if (!pressed) return;
+        if (key == Key::Escape) {
+            if (selectedBinding >= 0) {
+                selectedBinding = -1;
+                keybindMessage = "Change cancelled.";
+            } else {
+                state = State::Waiting;
+            }
+        } else if (selectedBinding >= 0) {
+            if (key == Key::K || key == Key::Num1 || key == Key::Num5 || key == Key::P) {
+                keybindMessage = "K, 1, 5 and P are reserved.";
+                return;
+            }
+            for (int i = 0; i < static_cast<int>(bindings.size()); i++) {
+                if (i != selectedBinding && bindings[i].key == key) {
+                    keybindMessage = "That key is already assigned. Try another.";
+                    return;
+                }
+            }
+            bindings[selectedBinding].key = key;
+            selectedBinding = -1;
+            keybindMessage = "Binding updated.";
+        } else {
+            for (int i = 0; i < static_cast<int>(bindings.size()); i++) {
+                if (bindings[i].key == key) {
+                    selectedBinding = i;
+                    keybindMessage.clear();
+                    break;
+                }
+            }
+        }
+        return;
+    }
+
+    if (pressed && state == State::Waiting) {
+        if (key == Key::K) {
+            state = State::Keybinds;
+            selectedBinding = -1;
+            keybindMessage.clear();
+        } else if (key == Key::Num5) {
+            ReceiveNotification("InsertCoin");
+        } else if (key == Key::Num1) {
+            ReceiveNotification("StartGame");
+        }
+        return;
+    }
+
+    auto currentPlayer = player.lock();
+    if ((state == State::Startup || state == State::Waves || state == State::Gameplay) &&
+        currentPlayer && currentPlayer->IsAlive()) {
+        for (const auto& binding : bindings) {
+            if (binding.key == key) {
+                const auto& message = pressed ? binding.down : binding.up;
+                if (!message.empty()) notifications->Notify(message);
+            }
+        }
+    }
+}
+
 void Galaga::Update(CMPUT350::GameContext* context) {
     // AI-assisted: count deaths in both active phases, even if the engine
     // still holds the killed player until its next removal pass.
@@ -36,6 +139,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
         auto currentPlayer = player.lock();
         if (!currentPlayer || !currentPlayer->IsAlive()) {
             respawnPending = true;
+            respawnAtFrame = -1;
             playerLives -= 1;
             if (playerLives <= 0) {
                 returnToHomeFrame = context->currentFrame + 150;
@@ -46,6 +150,9 @@ void Galaga::Update(CMPUT350::GameContext* context) {
     }
 
     switch (state) {
+        case (State::Keybinds): {
+            break;
+        }
         case (State::Waiting): {
             break;
         }
@@ -59,6 +166,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                 player = newPlayer;
                 context->mEngineView->AddGameObject(newPlayer);
                 respawnPending = false;
+                respawnAtFrame = -1;
             }
             
             if (context->currentFrame >= startAtFrame) {
@@ -298,7 +406,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
             break;
         }
         case (State::Gameplay): {
-            if (enemyCount == 0) {  // progress to next level
+            if (enemyCount == 0 && !respawnPending) {  // progress to next level
                 level += 1;
                 startUpPending = true;
                 state = State::Startup;
@@ -320,12 +428,20 @@ void Galaga::Update(CMPUT350::GameContext* context) {
             }
             attackGroupActive = enemiesAttacking;
 
-            if (respawnPending && !enemiesAttacking) {  // only respawn player when enemies are done attacking
-                auto newPlayer = std::make_shared<Player>(playerSpawn);
-                player = newPlayer;
-                context->mEngineView->AddGameObject(newPlayer);
-                respawnPending = false;
-                nextEnemyAttackFrame = context->currentFrame + enemyAttackPauseFrames;
+            // AI-assisted: leave the lives message visible for two seconds
+            // after all enemies return, then spawn exactly one replacement.
+            if (respawnPending && !enemiesAttacking) {
+                if (respawnAtFrame == -1) {
+                    respawnAtFrame = context->currentFrame + respawnDelayFrames;
+                }
+                if (context->currentFrame >= respawnAtFrame) {
+                    auto newPlayer = std::make_shared<Player>(playerSpawn);
+                    player = newPlayer;
+                    context->mEngineView->AddGameObject(newPlayer);
+                    respawnPending = false;
+                    respawnAtFrame = -1;
+                    nextEnemyAttackFrame = context->currentFrame + enemyAttackPauseFrames;
+                }
             }
 
             auto currPlayer = player.lock();
@@ -404,6 +520,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                 currWave = 1;
                 wavePending = false;
                 respawnPending = false;
+                respawnAtFrame = -1;
                 attackGroupActive = false;
                 attackPattern = 0;
                 nextEnemyAttackFrame = 0;
@@ -434,7 +551,27 @@ void Galaga::RenderUI(CMPUT350::GameContext* context) {
         }
 
     switch (state) {
+        case (State::Keybinds): {
+            context->GUIContext->DrawCenteredText(
+                "Controls", 32, {screenWidth / 2.f, screenHeight * 0.25f}, CMPUT350::Colors::white);
+            for (int i = 0; i < static_cast<int>(bindings.size()); i++) {
+                context->GUIContext->DrawCenteredText(
+                    bindings[i].label + ": " + KeyName(bindings[i].key), 26,
+                    {screenWidth / 2.f, screenHeight * 0.35f + i * 60.f},
+                    selectedBinding == i ? CMPUT350::Colors::yellow : CMPUT350::Colors::white);
+            }
+            context->GUIContext->DrawCenteredText(
+                selectedBinding >= 0 ? "Press a replacement key. Escape cancels."
+                                     : "Press a current control to change it. Escape: Back",
+                14, {screenWidth / 2.f, screenHeight * 0.60f}, CMPUT350::Colors::white);
+            context->GUIContext->DrawCenteredText(
+                keybindMessage, 14, {screenWidth / 2.f, screenHeight * 0.66f}, CMPUT350::Colors::white);
+            break;
+        }
         case (State::Waiting): {
+            context->GUIContext->DrawCenteredText(
+                "Press K to configure controls", 20,
+                {screenWidth / 2.f, screenHeight / 2.f + 120.f}, CMPUT350::Colors::white);
             context->GUIContext->DrawCenteredText(
                 "Press 5 to Insert a Coin",
                 24,
@@ -479,7 +616,11 @@ void Galaga::RenderUI(CMPUT350::GameContext* context) {
 }
 
 void Galaga::ReceiveNotification(const std::string& key) {
-    if (key == "EnemyDestroyed:100") {
+    if (key.starts_with("KeyDown:")) {
+        HandleKey(std::stoi(key.substr(8)), true);
+    } else if (key.starts_with("KeyUp:")) {
+        HandleKey(std::stoi(key.substr(6)), false);
+    } else if (key == "EnemyDestroyed:100") {
         if (state == State::Waiting || state == State::GameOver) return;
         enemyCount -= 1;
         playerScore += 100;

@@ -5,6 +5,8 @@
 #include "Player.h"
 #include <memory>
 #include "MathUtil.h"
+#include <array>
+#include <vector>
 
 class Galaga : public CMPUT350::GameObject {
 public:
@@ -16,13 +18,29 @@ public:
     void ReceiveNotification(const std::string& key) override;
 
 private:
+    // AI-assisted: game-owned controls; engine mappings remain installed.
+    struct KeyBinding {
+        std::string label;
+        int key;
+        std::string down;
+        std::string up;
+    };
+    std::array<KeyBinding, 3> bindings;
+    int selectedBinding = -1; // Select by pressing the action's current key.
+    std::string keybindMessage;
+    std::vector<bool> keysHeld;
+    CMPUT350::NotificationManager* notifications = nullptr; // Engine-owned.
+    void HandleKey(int key, bool pressed);
+
     enum class State {
+        Keybinds,
         Waiting,
         Startup,
         Waves,
         Gameplay,
         GameOver
     };
+
 
     State state = State::Waiting;
     int screenWidth;
@@ -44,6 +62,8 @@ private:
     int playerScore = 0;
     int playerLives = 3;
     bool respawnPending = false;
+    int respawnDelayFrames = 60; // Two seconds after enemies finish returning.
+    int respawnAtFrame = -1; // -1 means the countdown has not started.
     int level = 1;
     bool coinInserted = false;
     std::weak_ptr<Player> player;
