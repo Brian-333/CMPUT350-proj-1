@@ -66,4 +66,13 @@ void GameObject::Kill() {}
  */
 void GameObject::ReceiveNotification(const std::string& key) { return; }
 
+/**
+ * @brief Reports whether the game object is static.
+ *
+ * @return True if the object is static; false otherwise.
+ *
+ * Default implementation returns false. Override to indicate that the object is static.
+ */
+bool GameObject::IsStatic() const { return false; }
+
 }  // namespace CMPUT350
