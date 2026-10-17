@@ -117,6 +117,7 @@ GameEngine::const_iterator GameEngine::end() const { return mGameObjects.end(); 
  * When either shape is a line, CollisionEnter receives the directed crossing
  * point converted back into each object's local coordinates. Circle/rect pairs
  * report an overlap without a single collision point.
+ * This function was done with the help of Cursor AI.
  *
  * @param shape1 The first shape in object1's local coordinates.
  * @param shape2 The second shape in object2's local coordinates.
