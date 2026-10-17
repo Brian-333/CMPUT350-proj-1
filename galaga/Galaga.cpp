@@ -1,6 +1,7 @@
 #include "Enemy.h"
 #include "Galaga.h"
 #include "Player.h"
+#include "Stars.h"
 #include "GameContext.h"
 #include "Keyboard.h"
 #include <iostream>
@@ -42,6 +43,9 @@ Galaga::Galaga(int width, int height): screenWidth(width), screenHeight(height)
 }
 
 void Galaga::Initialize(CMPUT350::GameContext* context) {
+    // AI-assisted: create one background for the lifetime of the game manager.
+    context->mEngineView->AddGameObject(std::make_shared<Stars>(
+        200, CMPUT350::Rect(0, 0, screenWidth, screenHeight)));
     notifications = context->mNotificationManager;
     // AI-assisted: use existing engine APIs to report raw key messages to
     // Galaga. Galaga translates them to actions, so rebinding just changes a key.
@@ -508,7 +512,8 @@ void Galaga::Update(CMPUT350::GameContext* context) {
             if (context->currentFrame >= returnToHomeFrame) {
                 for (auto& object : *context->mEngineView) {
                     auto galaga = std::dynamic_pointer_cast<Galaga>(object);
-                    if (galaga) {
+                    // AI-assisted: preserve the background when resetting the game.
+                    if (galaga || std::dynamic_pointer_cast<Stars>(object)) {
                         continue;
                     }
                     object->Kill();

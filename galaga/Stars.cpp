@@ -14,6 +14,16 @@ Stars::Stars(int numStars, CMPUT350::Rect bounds)
     }
 }
 
+CMPUT350::Point2D Stars::GetLocation() const
+{
+    return {0, 0};
+}
+
+float Stars::GetRotation() const
+{
+    return 0.0f;
+}
+
 void Stars::RenderBackground(CMPUT350::GameContext* context)
 {
     CMPUT350::RGBColor c[4] = {

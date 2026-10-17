@@ -1,4 +1,5 @@
 #include "GameEngine.h"
+#include <cmath>
 
 /// @brief
 namespace CMPUT350 {
@@ -171,9 +172,23 @@ void GameEngine::ProcessShapeCollision(Shape shape1, Shape shape2, std::shared_p
                 }
                 case ShapeType::kCircle: {
                     Circle circle(toGlobal(object2, shape2.shape.circle.center), shape2.shape.circle.radius);
-                    crossingPoint = line1.ClosestPoint(circle.center);
-                    if (crossingPoint.Distance(circle.center) <= circle.radius) {
-                        notifyPoint(crossingPoint);
+                    // AI-assisted: solve for the first boundary hit along p1 + t * direction.
+                    Point2D direction = line1.p2 - line1.p1;
+                    Point2D offset = line1.p1 - circle.center;
+                    double a = Point2D::Dot(direction, direction);
+                    double b = 2.0 * Point2D::Dot(offset, direction);
+                    double c = Point2D::Dot(offset, offset) -
+                               static_cast<double>(circle.radius) * circle.radius;
+                    if (c <= 0) {
+                        notifyPoint(line1.p1); // The line already starts inside/on the circle.
+                    } else if (a > 0) {
+                        double discriminant = b * b - 4.0 * a * c;
+                        if (discriminant >= 0) {
+                            double t = (-b - std::sqrt(discriminant)) / (2.0 * a);
+                            if (t >= 0 && t <= 1) {
+                                notifyPoint(line1.p1 + direction * static_cast<float>(t));
+                            }
+                        }
                     }
                     break;
                 }
@@ -181,19 +196,23 @@ void GameEngine::ProcessShapeCollision(Shape shape1, Shape shape2, std::shared_p
                     Rect rect = shape2.shape.rect;
                     Point2D corners[4];
                     cornersOf(object2, rect, corners);
-                    bool hit = false;
-                    for (int i = 0; i < 4; i++) {
-                        if (line1.Crosses(Line(corners[i], corners[(i + 1) % 4]), crossingPoint)) {
-                            hit = true;
-                            break;
+                    // AI-assisted: choose the closest edge hit to the directed line's start.
+                    bool hit = rect.IsInside(toLocal(object2, line1.p1));
+                    crossingPoint = line1.p1;
+                    if (!hit) {
+                        float closestDistanceSquared = 0;
+                        for (int i = 0; i < 4; i++) {
+                            Point2D edgePoint;
+                            if (line1.Crosses(Line(corners[i], corners[(i + 1) % 4]), edgePoint)) {
+                                Point2D distance = edgePoint - line1.p1;
+                                float distanceSquared = Point2D::Dot(distance, distance);
+                                if (!hit || distanceSquared < closestDistanceSquared) {
+                                    crossingPoint = edgePoint;
+                                    closestDistanceSquared = distanceSquared;
+                                    hit = true;
+                                }
+                            }
                         }
-                    }
-                    if (!hit && rect.IsInside(toLocal(object2, line1.p1))) {
-                        crossingPoint = line1.p1;
-                        hit = true;
-                    } else if (!hit && rect.IsInside(toLocal(object2, line1.p2))) {
-                        crossingPoint = line1.p2;
-                        hit = true;
                     }
                     if (hit) {
                         notifyPoint(crossingPoint);
