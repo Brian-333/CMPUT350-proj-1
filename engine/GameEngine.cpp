@@ -31,6 +31,7 @@ GameEngine::GameEngine(unsigned int width, unsigned int height, const std::strin
         std::cerr << "WARNING: Font did not load." << "\n";
     }
     mGameContext.ScreenContext = new DrawContext(mWindow, font);
+    mGameContext.mNotificationManager = new NotificationManager();
     mGameContext.mEngineView = this;
 }
 
@@ -44,6 +45,9 @@ GameEngine::~GameEngine() {
     // Clean up game objects
     if (mGameContext.ScreenContext) {
         delete mGameContext.ScreenContext;
+    }
+    if (mGameContext.mNotificationManager) {
+        delete mGameContext.mNotificationManager;
     }
     for (auto gameObject : mGameObjects) {
         gameObject->Kill();
@@ -93,10 +97,32 @@ void GameEngine::AddGameObject(std::shared_ptr<GameObject> gameObject) {
     mGameObjectsToAdd.emplace_back(gameObject);
 }
 
+/**
+ * @brief Returns a const iterator to the beginning of the game objects vector.
+ *
+ * @return A const iterator to the beginning of the game objects vector.
+ */
 GameEngine::const_iterator GameEngine::cbegin() const { return mGameObjects.cbegin(); }
 GameEngine::const_iterator GameEngine::cend() const { return mGameObjects.cend(); }
 GameEngine::const_iterator GameEngine::begin() const { return mGameObjects.begin(); }
 GameEngine::const_iterator GameEngine::end() const { return mGameObjects.end(); }
+
+/**
+ * @brief Processes an internal collision between two collision objects.
+ *
+ * This function is used to process collisions between two collision objects.
+ *
+ * @param object1 The first collision object.
+ * @param object2 The second collision object.
+ */
+void GameEngine::ProcessCollision(std::shared_ptr<CollisionObject> object1, std::shared_ptr<CollisionObject> object2) {
+    Rect bounds = object1->GetBounds();
+    bounds &= object2->GetBounds();
+    if (bounds.width > 0 && bounds.height > 0) {
+        object1->CollisionEnter(object2);
+        object2->CollisionEnter(object1);
+    }
+}
 
 /**
  * @brief Runs the main game loop until the window is closed.
@@ -128,6 +154,7 @@ void GameEngine::Run() {
         while (!mGameObjectsToAdd.empty()) {
             std::shared_ptr<GameObject> gameObject = mGameObjectsToAdd.front();
             mGameObjectsToAdd.erase(mGameObjectsToAdd.begin());
+            mGameContext.CurrObject = gameObject;
             gameObject->Initialize(&mGameContext);
             mGameObjects.emplace_back(gameObject);
         }
@@ -141,7 +168,7 @@ void GameEngine::Run() {
             }
             else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
                 static int currentKey;
-                currentKey = static_cast<int>(keyPressed->code);
+                currentKey = static_cast<int>(keyPressed->scancode);
                 if (currentKey == Key::P) {
                     gameRunning = !gameRunning;
                 }
@@ -151,7 +178,7 @@ void GameEngine::Run() {
             }
             else if (const auto* keyReleased = event->getIf<sf::Event::KeyReleased>()) {
                 static int currentKey;
-                currentKey = static_cast<int>(keyReleased->code);
+                currentKey = static_cast<int>(keyReleased->scancode);
                 if (mKeybindsUp.contains(currentKey)) {
                     mGameContext.mNotificationManager->Notify(mKeybindsUp[currentKey]);
                 }
@@ -161,6 +188,7 @@ void GameEngine::Run() {
         // 3. Update game objects
         if (gameRunning) {
             for (auto gameObject : mGameObjects) {
+                mGameContext.CurrObject = gameObject;
                 gameObject->Update(&mGameContext);
             }
         }
@@ -177,12 +205,7 @@ void GameEngine::Run() {
             }
             for (int i = 0; i < collisionObjects.size(); i++) {
                 for (int j = i + 1; j < collisionObjects.size(); j++) {
-                    Rect bounds = collisionObjects[i]->GetBounds();
-                    bounds &= collisionObjects[j]->GetBounds();
-                    if (bounds.width > 0 && bounds.height > 0) {
-                        collisionObjects[i]->CollisionEnter(collisionObjects[j]);
-                        collisionObjects[j]->CollisionEnter(collisionObjects[i]);
-                    }
+                    ProcessCollision(collisionObjects[i], collisionObjects[j]);
                 }
             }
         }
@@ -190,6 +213,7 @@ void GameEngine::Run() {
         // 5. Late updates
         if (gameRunning) {
             for (auto gameObject : mGameObjects) {
+                mGameContext.CurrObject = gameObject;
                 gameObject->LateUpdate(&mGameContext);
             }
         }

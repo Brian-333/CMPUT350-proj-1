@@ -51,6 +51,8 @@ private:
 
     std::unordered_map<int, std::string> mKeybindsDown;
     std::unordered_map<int, std::string> mKeybindsUp;
+
+    void ProcessCollision(std::shared_ptr<CollisionObject> object1, std::shared_ptr<CollisionObject> object2);
 };
 
 }  // namespace CMPUT350
